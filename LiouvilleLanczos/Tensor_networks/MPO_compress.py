@@ -204,7 +204,7 @@ def order_one_square_root(
 	MPO: qtn.MatrixProductOperator, tol: float, crit: float, max_bond=None
 ):
 	"""compute an order one approximation to the square root of MPO assuming its eigenvalues are in the domain [0,1].
-	This approximation is better starting point for newton's method than order_two_square_root if it is know
+	This approximation is better starting point for newton's method than order_two_square_root if it is known
 	that no eigenvalues are close to zero."""
 	zero = generate_id_MPO(MPO.lower_ind_id, MPO.upper_ind_id, MPO.L, factor=0.23570226)
 	one = MPO * 2 * 0.40824829
@@ -602,8 +602,8 @@ def MPO_compressing_sum(
 		if iter_count > 1000:
 			print("Compressing sum failed to converge")
 			break
-	print("iterations: ", iter_count)
-	print(norms)
+	# print("iterations: ", iter_count)
+	# print(norms)
 	return out
 
 

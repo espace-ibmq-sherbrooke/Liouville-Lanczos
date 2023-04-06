@@ -3,10 +3,11 @@ import numpy as np
  
 
 class Lanczos():
-    def __init__(self,inner_product,Liouvillian, logger = None):
+    def __init__(self,inner_product,Liouvillian,sum, logger = None):
         self.inner_prod  = inner_product
         self._logger = logger
         self.Liouvillian = Liouvillian
+        self.sum = sum
 
     @property
     def logger(self):
@@ -22,7 +23,7 @@ class Lanczos():
         f_i = f_0
         f_ip = self.Liouvillian(H,f_i)
         a_i = self.inner_prod(f_ip,f_i)
-        f_ip = f_ip - a_i*f_i
+        f_ip = self.sum(f_ip, - a_i*f_i)
         b_ip = np.sqrt(self.inner_prod(f_ip,f_ip))
         f_ip = f_ip / b_ip
         a = [a_i]
@@ -35,8 +36,10 @@ class Lanczos():
                 self.logger.log(k)
             b.append(b_ip)
             f_ip = self.Liouvillian(H,f_i)
+            print("post_liouville bond: {}".format(f_ip.max_bond()))
             a_i = self.inner_prod(f_ip,f_i)
-            f_ip = f_ip - a_i*f_i - b[-1]*f_im
+            f_ip = self.sum(f_ip,- a_i*f_i,- b[-1]*f_im)
+            print("f_ip bond: {}".format(f_ip.max_bond()))
             b_ip = np.sqrt(self.inner_prod(f_ip,f_ip))
             f_ip = f_ip / b_ip
             a.append(a_i)
