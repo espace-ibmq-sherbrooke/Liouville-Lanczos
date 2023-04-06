@@ -1,0 +1,27 @@
+[build-system]
+requires = ["flit_core >=3.2,<4","wheel"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "LiouvilleLanczos"
+authors = [{name = "Alexandre Foley", email = "Alexandre.Foley@usherbrooke.ca"}]
+dynamic = ["version", "description"]
+classifiers = ["Private :: Do Not Upload"]
+dependencies = [
+    "numpy",
+    "scipy",
+    "qiskit",
+    "qiskit-nature >= 0.5",
+    "qiskit_ibm_provider",
+    "quimb"
+#    "pauliarray",
+]
+
+[project.optional-dependencies]
+test = [
+    "matplotlib",
+    "seaborn",
+]
+doc = ["sphinx"]
+[project.urls]
+Home = "https://github.com/espace-ibmq-sherbrooke/wFunction.git"

@@ -1,0 +1,5 @@
+env/*
+.DS_store
+.vscode/*
+*.qpy
+*.pyc
