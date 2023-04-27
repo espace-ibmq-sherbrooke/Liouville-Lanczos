@@ -1,4 +1,7 @@
 # %%
+import importlib
+#importlib.reload(module)
+
 import qiskit
 import numpy as np
 from qiskit import qpy
@@ -19,6 +22,7 @@ from qiskit_ibm_runtime.options import (
     EnvironmentOptions,
     ResilienceOptions,
     TranspilationOptions,
+    
 )
 from qiskit import transpile
 from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
@@ -27,7 +31,12 @@ from qiskit.transpiler.passes import (
     Optimize1qGatesSimpleCommutation,
     Optimize1qGatesDecomposition,
     RemoveBarriers,
-
+    LayoutTransformation,
+    RZXCalibrationBuilder,
+    EchoRZXWeylDecomposition,
+    NoiseAdaptiveLayout,
+    ApplyLayout,
+    RZXCalibrationBuilderNoEcho,
 )
 from qiskit.transpiler.passmanager import PassManager
 
@@ -39,7 +48,7 @@ from LiouvilleLanczos.Quantum_computer.Hamiltonian import (
     BoundaryCondition,
     Line_Hubbard_BaseProblem,
 )
-from LiouvilleLanczos.Quantum_computer.Mapping import optimize_init_layout
+from LiouvilleLanczos.Quantum_computer import Mapping
 from qiskit_research.utils.convenience import scale_cr_pulses,add_pauli_twirls,add_dynamical_decoupling
 
 qubit_converter = QubitConverter(JordanWignerMapper())
@@ -141,7 +150,7 @@ A = sg.ECRGate
 
 # %%
 Sherbrooke = backend = service_algolab.backend("ibm_sherbrooke")
-mtl = backend = service_algolab.backend("ibmq_montreal")
+mtl = backend = service_algolab.backend("ibmq_kolkata")
 # %%
 conf = Sherbrooke.configuration()
 # %%
@@ -163,27 +172,47 @@ SS1_1q = OnequbitPass.run(SS1)
 """Check that those transpilation passes didn't do anything dumb"""
 print(eesti.run(SS1_1q,HAM).result().values[0])
 #%%
+
+SS1_1q_m = SS1_1q.copy()
+SS1_1q_m.measure_all()
+scored_m,m_def = Mapping.optimize_init_layout(SS1_1q_m,mtl,10,level=3,seed=1123123)#level 2 give wrong results?
+m_def.remove_final_measurements()
+
 options = Options()
-options.environment.job_tags = ["wPtwirls"]
-# options.resilience_level=2
-# with Session(backend=mtl) as session:
-mtl_estimator = Estimator(session=mtl,options=options)
-mtl_estim_result = mtl_estimator.run(SS1_1q,HAM)
+# options.transpilation.initial_layout = scored_m
+with Session(backend=Sherbrooke) as session:
+    options.environment.job_tags = ["resil0"]
+    options.resilience_level=0
+    mtl_estimator = Estimator(session=session,options=options)
+    mtl_estim_result_resil0 = mtl_estimator.run(SS1_1q,HAM)
+    options.environment.job_tags = ["resil1"]
+    options.resilience_level=1
+    mtl_estimator = Estimator(session=session,options=options)
+    mtl_estim_result_resil1 = mtl_estimator.run(SS1_1q,HAM)
+    # options.environment.job_tags = ["resil2"]
+    # options.resilience_level=2
+    # q_estimator = Estimator(session=session,options=options)
+    # mtl_estim_result_resil2 = q_estimator.run(m_def,HAM)
+    # options.environment.job_tags = ["resil3"]
+    # options.resilience_level=3
+    # q_estimator = Estimator(session=session,options=options)
+    # mtl_estim_result_resil2 = q_estimator.run(m_def,HAM)
 
 # %%
-SS1_mtl = transpile(SS1_1q,mtl)
-#%%
-# SS1_cr = scale_cr_pulses(SS1_mtl,mtl)
-#%%
-# with open("SS1_MTL_CRscaled.qpy",'wb') as handle:
-#     qpy.dump(SS1_cr,handle)
-# %%
-NPT = 15
-pt_SS1 = add_pauli_twirls(SS1_1q,NPT)
-pttest_result = eesti.run(pt_SS1,[HAM]*NPT).result()
-# %%
 num_tries = 10
-scored_layout,deflated_circuit,best_circuit = optimize_init_layout(SS1_1q,mtl,num_tries,level=3,seed=1123123)
+SS1_1q_m = SS1_1q.copy()
+SS1_1q_m.measure_all()
+scored_layout,deflated_circuit = Mapping.optimize_init_layout(SS1_1q_m,mtl,num_tries,level=3,seed=1123123)#level 2 give wrong results?
+deflated_circuit.remove_final_measurements()
+#%%
+layout_methods = ('trivial', 'dense', 'noise_adaptive', 'sabre')
+routing_methods = ('basic', 'lookahead', 'stochastic', 'sabre', 'none')
+deflated_circuit.remove_final_measurements()
+deflated_circuit.measure_all()
+ss1_tr = transpile(deflated_circuit,mtl,initial_layout=list(scored_layout))
+#%%
+
+SS1_cr = scale_cr_pulses(ss1_tr,mtl)
 # %%
 print(eesti.run(deflated_circuit,HAM).result().values)
 # %%
@@ -215,8 +244,33 @@ T.barrier(range(8))
 for i in range(8):
     T.rz(0.1*i,i)
 T.draw('mpl')
-# %%
-scored_T,T_def,best_T = optimize_init_layout(T,mtl,num_tries,level=2,seed=1123123)
-scored_il,il_def,best_il = optimize_init_layout(T,mtl,num_tries,level=2,seed=1123123,initial_layout=range(8))
 
+#%%
+importlib.reload(Mapping)
+
+#%%
+SS1_1q_m = SS1_1q.copy()
+SS1_1q_m.measure_all()
+scored_m,m_def = Mapping.optimize_init_layout(SS1_1q_m,mtl,num_tries,level=3,seed=1123123)#level 2 give wrong results?
+m_def.remove_final_measurements()
+#%%
+scored_T,T_def,best_T = Mapping.optimize_init_layout(T,mtl,num_tries,level=3,seed=1123123)
+#%%
+scored_il,il_def,best_il = Mapping.optimize_init_layout(T,mtl,num_tries,level=2,seed=1123123,initial_layout=range(8))
+
+# %%
+from qiskit.visualization import plot_circuit_layout
+from qiskit.visualization import plot_coupling_map
+# %%
+from qiskit.circuit.random import random_circuit
+
+rc = random_circuit(8,5,4,True)
+rc.draw('mpl')
+#%%
+rc_t = transpile(rc,mtl)
+rc_t.draw('mpl',idle_wires=False)
+# %%
+template_basis = ['cx','rz','sx','p','rx','rzx']
+template_normalisation = PassManager([Optimize1qGatesDecomposition(template_basis)])
+SS1_tr2 = template_normalisation.run(ss1_tr)
 # %%

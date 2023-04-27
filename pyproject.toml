@@ -14,10 +14,12 @@ dependencies = [
     "qiskit-nature >= 0.5",
     "qiskit_ibm_provider",
     "quimb"
-#    "pauliarray",
 ]
 
 [project.optional-dependencies]
+pauliarray = [
+    "pauliarray",
+]
 test = [
     "matplotlib",
     "seaborn",

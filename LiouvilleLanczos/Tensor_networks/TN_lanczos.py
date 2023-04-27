@@ -15,6 +15,7 @@ class Liouvillian:
         OH.upper_ind_id = HO.upper_ind_id
         H.lower_ind_id = HO.lower_ind_id
         return MPO_compressing_sum([HO,OH],self.eps,self.eps*0.5)
+    
 class inner_product:
     def __init__(self,ket:MPS):
         self.ket = ket
@@ -36,6 +37,7 @@ class inner_product:
         A.upper_ind_id = bra.site_ind_id
         AB = (bra|A|BH|self.ket).contract()
         return AB+BA
+    
 class Compressing_operator_sum:
     def __init__(self,eps) -> None:
         self.eps = eps

@@ -63,6 +63,7 @@ Kperspin = -1*np.array([
     [0,1,0,1],
     [1,0,1,0],
     ])
+
 Eps,Sps = np.linalg.eigh(Kperspin)
 #%%
 Sp = np.zeros((8,8))
