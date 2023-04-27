@@ -1,10 +1,35 @@
-env/*
-.DS_store
-.vscode/*
-*.qpy
+#MACOS
+.DS_Store
+
+# Python virtual environment
+env/
+
+# Compiled Python files
 *.pyc
-tests/hubu4mu2.pdf
-tests/hubbard_GS.pickle
-tests/4part_slater_bogo.qasm
-tests/2slaters_opt_bogo.qasm
+*.pickle
+
+# Cached files
+__pycache__/
+
+# Project dependencies (e.g. from pip)
+# Remove this line if you're using Pipenv or Poetry
+requirements.txt
+
+# TeX generated files
+*.aux
+*.log
+*.toc
+*.out
+*.synctex.gz
+*.pdf
+
+# TeX editor files
+# Replace `vscode` with the name of your editor, e.g. `sublime`
+.vscode/
+
+#subproject
 pauliarray/*
+
+#qiskit binary structs
+*.qpy
+*.qasm
