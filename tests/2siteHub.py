@@ -11,13 +11,16 @@ from LiouvilleLanczos.Green import CF_Green
 from qiskit import qpy
 
 from qiskit.primitives import Estimator as pEstimator
+from qiskit.primitives import BackendEstimator
 
 from qiskit_nature.second_q.mappers import JordanWignerMapper,QubitConverter
 from qiskit_nature.second_q.operators import FermionicOp
 from qiskit import QuantumCircuit
 import numpy as np
 from LiouvilleLanczos.Quantum_computer.err_mitig_inprod import twirled_inner_product 
-from qiskit_research.utils.convenience import add_pauli_twirls
+from qiskit_research.utils.convenience import add_pauli_twirls,add_dynamical_decoupling,scale_cr_pulses,attach_cr_pulses
+from qiskit_research.utils.pulse_scaling import BASIS_GATES
+import LiouvilleLanczos.Quantum_computer.LayoutJordanWigner
 
 #%%
 
@@ -159,42 +162,27 @@ backends = {"ibmq_kolkata":kolk,"ibm_sherbrooke":Sher,"ibm_washington":wash}
 options = Options()
 options.optimization_level = 3
 options.transpilation.approximation_degree=1.0
+options.transpilation.seed = 0
 Ntwirl = 20
-with Session(backend=kolk) as session:
+with Session(backend=Sher) as session:
     backend = backends[session.backend()]
     init_layout,GS_opt = find_best_layout(GS_analytical,backend,10)
-    circuit = GS_opt
-    # options.resilience_level = 1
-    # options.environment.job_tags = ["resil1_E"]
-    # estim = Estimator(session=session,options=options)
-    # job1 = estim.run(GS_analytical,HHam)
-    options.resilience_level = 2
-    # options.resilience.extrapolator = "QuadraticExtrapolator"
-    options.resilience.noise_factors = (1,2,3,4,5)#seems pretty good with linear extrap
-    options.environment.job_tags = ["resil2_E"]
-    options.transpilation.initial_layout = init_layout
+    session_qubit_converter = QubitConverter(JordanWignerlayout(init_layout,backend.configuration().n_qubits))
+    options.resilience_level = 1
+    options.transpilation.initial_layout=init_layout
+    options.environment.job_tags = ["resil1","twirled","E"]
     estim = Estimator(session=session,options=options)
-    job2 = estim.run(GS_opt,HHam)
-    options.environment.job_tags = ["resil2_twirls_E"]
+    circuit = transpile(GS_opt,basis_gates=['sx','rz','cx','x'])
+    PT_circs = add_pauli_twirls(circuit,Ntwirl)
+    PT_circs = transpile(PT_circs, backend,init_layout=init_layout)
+    observable = session_qubit_converter.convert(Ham)
+    job1 = estim.run(PT_circs,[observable]*Ntwirl)
+    options.environment.job_tags = ["resil3","E"]
+    options.resilience_level=3
     estim = Estimator(session=session,options=options)
-    job2 = estim.run(add_pauli_twirls(GS_opt,num_twirled_circuits=Ntwirl),[HHam]*Ntwirl)
-    # options.resilience_level = 3
-    # options.environment.job_tags = ["resil3_E"]
-    # estim = Estimator(session=session,options=options)
-    # job2 = estim.run(GS_analytical,HHam)
+    job3 = estim.run(circuit,HHam)
+
 # %%
 job = service_algolab.job('ch4iteqccl2b15p5uvo0')
 # %%
-from numpy.polynomial import Polynomial
-def rzne(results,degree=1):
-    """
-    Does the pauli twirl average before the ZNE.
-    With degree one fit, it doesn't matter wether we do ZNE before or after averaging the pauli twirls
-    """
-    noise_factors = results.metadata[0]['zne']['noise_amplification']['noise_factors']
-    zne_values = np.array([ rm['zne']['noise_amplification']['values'] for rm in results.metadata])
-    mean_val = np.mean(zne_values,axis=0)
-    f = Polynomial.fit(noise_factors,mean_val,degree)
-    return f(0)
-
 # %%

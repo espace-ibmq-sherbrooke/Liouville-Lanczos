@@ -17,7 +17,11 @@ def find_best_layout(circuit:QuantumCircuit,backend,num_tries,level=3,seed=13242
     circuits_ts = transpile(
         [circuit] * num_tries, backend, optimization_level=level, seed_transpiler=seed,initial_layout=initial_layout
     )
-    cx_counts = [circuits_ts[idx].count_ops()["cx"] for idx in range(num_tries)]
+    if 'ecr' in backend.configuration().basis_gates:
+        egate = 'ecr'
+    else:
+        egate = 'cx'
+    cx_counts = [circuits_ts[idx].count_ops()[egate] for idx in range(num_tries)]
     best_idx = np.argmin(cx_counts)
     best_circuit = circuits_ts[best_idx]
     permutation = mapping_to_permutation(extract_physical_mapping(best_circuit,nqbit))

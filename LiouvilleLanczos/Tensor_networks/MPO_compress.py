@@ -183,7 +183,7 @@ def sum_sweep(
 			assert len(Env[i, oc].inds) == 2
 
 		oc += direction
-		direction = direction - 2 * (oc == (L - 1) or oc == 0) * direction
+		direction = direction(1 - 2 * (oc == (L - 1) or oc == 0))
 
 		if oc == starting_oc:
 			tags = target[oc].tags
@@ -540,11 +540,16 @@ def MPO_compressor(
 ):
 	return MPO_compressing_sum([MPO], tol, crit, max_bond)
 
+def compressing_commutator(A:qtn.MatrixProductOperator,B:qtn.MatrixProductOperator,tol:float,crit:float,max_bond=None):
+	"""
+	compute the commutator of the MPOs A and B
+	"""
+	raise NotImplementedError()
 
 def MPO_compressing_sum(
 	MPOs: List[qtn.MatrixProductOperator], tol: float, crit: float, max_bond=None
 ):
-	# check free indices are compatible across all input MPS
+	# check free indices are compatible across all input MPO
 	mpo0 = MPOs[0]
 	N = mpo0.L
 	tens_arr = [
