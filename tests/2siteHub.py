@@ -20,7 +20,8 @@ import numpy as np
 from LiouvilleLanczos.Quantum_computer.err_mitig_inprod import twirled_inner_product 
 from qiskit_research.utils.convenience import add_pauli_twirls,add_dynamical_decoupling,scale_cr_pulses,attach_cr_pulses
 from qiskit_research.utils.pulse_scaling import BASIS_GATES
-import LiouvilleLanczos.Quantum_computer.LayoutJordanWigner
+from LiouvilleLanczos.Quantum_computer.LayoutJordanWigner import JordanWignerlayout
+from qiskit import transpile
 
 #%%
 
@@ -117,18 +118,18 @@ print(estimator.run(GS_analytical,HHam).result().values)
 eps = 1e-6
 lanczos = Lanczos(inner_product(GS_analytical,estimator,qubit_converter,eps),Liouvillian(eps),sum(eps))
 #%%
-a,b = lanczos(Ham,C0,10,1e-3)
+# a,b = lanczos(Ham,C0,10,1e-3)
 
 # %%
-green = CF_Green(a,b)
-green_ed = CF_Green(a_mat,b_mat)
+# green = CF_Green(a,b)
+# green_ed = CF_Green(a_mat,b_mat)
 
 #%%
 #On constate que ça marhe très bien en simulation
-import matplotlib.pyplot as plt
-w = np.linspace(-5.5,5.5,1000)-1e-1j
-plt.plot(w,np.imag(green(w)))
-plt.savefig("hubu4mu2.pdf")
+# import matplotlib.pyplot as plt
+# w = np.linspace(-5.5,5.5,1000)-1e-1j
+# plt.plot(w,np.imag(green(w)))
+# plt.savefig("hubu4mu2.pdf")
 # plt.plot(w,np.imag(green_ed(w)))
 #%%
 from qiskit_ibm_runtime import (
@@ -166,7 +167,7 @@ options.transpilation.seed = 0
 Ntwirl = 20
 with Session(backend=Sher) as session:
     backend = backends[session.backend()]
-    init_layout,GS_opt = find_best_layout(GS_analytical,backend,10)
+    init_layout,GS_opt = find_best_layout(GS_analytical,backend,10,seed = 50)
     session_qubit_converter = QubitConverter(JordanWignerlayout(init_layout,backend.configuration().n_qubits))
     options.resilience_level = 1
     options.transpilation.initial_layout=init_layout
@@ -174,15 +175,8 @@ with Session(backend=Sher) as session:
     estim = Estimator(session=session,options=options)
     circuit = transpile(GS_opt,basis_gates=['sx','rz','cx','x'])
     PT_circs = add_pauli_twirls(circuit,Ntwirl)
-    PT_circs = transpile(PT_circs, backend,init_layout=init_layout)
+    PT_circs = transpile(PT_circs, backend,initial_layout=init_layout)
     observable = session_qubit_converter.convert(Ham)
     job1 = estim.run(PT_circs,[observable]*Ntwirl)
-    options.environment.job_tags = ["resil3","E"]
-    options.resilience_level=3
-    estim = Estimator(session=session,options=options)
-    job3 = estim.run(circuit,HHam)
 
-# %%
-job = service_algolab.job('ch4iteqccl2b15p5uvo0')
-# %%
 # %%
