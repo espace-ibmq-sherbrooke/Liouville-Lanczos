@@ -118,7 +118,7 @@ print(estimator.run(GS_analytical,HHam).result().values)
 eps = 1e-6
 lanczos = Lanczos(inner_product(GS_analytical,estimator,qubit_converter,eps),Liouvillian(eps),sum(eps))
 #%%
-# a,b = lanczos(Ham,C0,10,1e-3)
+a_sim5,b_sim5 = lanczos(Ham,C0,10,5e-3)
 
 # %%
 # green = CF_Green(a,b)
@@ -170,7 +170,7 @@ with Session(backend=Sher) as session:
     init_layout,GS_opt = find_best_layout(GS_analytical,backend,10,seed = 50)
     session_qubit_converter = QubitConverter(JordanWignerlayout(init_layout,backend.configuration().n_qubits))
     options.resilience_level = 1
-    options.transpilation.initial_layout=init_layout
+    # options.transpilation.initial_layout=init_layout
     options.environment.job_tags = ["resil1","twirled","E"]
     estim = Estimator(session=session,options=options)
     circuit = transpile(GS_opt,basis_gates=['sx','rz','cx','x'])
@@ -178,5 +178,53 @@ with Session(backend=Sher) as session:
     PT_circs = transpile(PT_circs, backend,initial_layout=init_layout)
     observable = session_qubit_converter.convert(Ham)
     job1 = estim.run(PT_circs,[observable]*Ntwirl)
+
+#%% Manual ZNE
+
+def Noise_amplification(circuit:QuantumCircuit,oddfactor:int):
+    out = circuit.copy()
+    assert(oddfactor%2 == 1)
+    nqbit = circuit.num_qubits
+    for i in range(oddfactor//2):
+        out.barrier(range(nqbit))
+        out.compose(circuit.inverse(),inplace=True)
+        out.barrier(range(nqbit))
+        out.compose(circuit,inplace=True)
+    return out
+#%%
+options = Options()
+options.optimization_level = 3
+options.transpilation.approximation_degree=1.0
+options.transpilation.seed = 0
+Ntwirl = 20
+with Session(backend=Sher) as session:
+    backend = backends[session.backend()]
+    init_layout,GS_opt = find_best_layout(GS_analytical,backend,10,seed = 50)
+    options.transpilation.initial_layout=init_layout
+    circuit = GS_analytical.copy()
+    nqbit = circuit.num_qubits
+    circuit1 = circuit.copy()
+    circuit3 = Noise_amplification(circuit,3)
+    circuit5 = Noise_amplification(circuit,5)
+    circuit7 = Noise_amplification(circuit,7)
+    options.resilience_level = 1
+    # options.transpilation.initial_layout=init_layout
+    options.environment.job_tags = ["resil1","ZNE","E"]
+    estim = Estimator(session=session,options=options)
+    observable = (HHam)
+    job1 = estim.run([circuit1,circuit3,circuit5,circuit7],[observable]*4)
+#%%
+with Session(backend=Sher) as session:
+    options = Options()
+    options.optimization_level = 3
+    options.transpilation.approximation_degree=1.0
+    options.transpilation.seed = 0
+    init_layout,GS_opt = find_best_layout(GS_analytical,backend,10,seed = 50)
+    options.transpilation.initial_layout=init_layout
+    circuit = GS_analytical.copy()
+    estim = Estimator(session=session,options=options)
+    eps = 1e-3 
+    lanczos = Lanczos(inner_product(circuit,estim,qubit_converter,eps),Liouvillian(eps),sum(eps))
+    a,b = lanczos(Ham,C0,10,5e-2)
 
 # %%

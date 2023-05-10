@@ -32,7 +32,8 @@ class inner_product():
     def __call__(self,A:op.SparseLabelOp,B:op.SparseLabelOp):
         f = commutators.anti_commutator(A,B.adjoint())
         f = relative_simplify(f,self.eps)
-        return self.estimator.run(self.state,self.mapper.convert(f)).result().values[0]
+        #imaginary contribution are necessarily error.
+        return np.real(self.estimator.run(self.state,self.mapper.convert(f)).result().values[0])
 
 class Liouvillian():
 

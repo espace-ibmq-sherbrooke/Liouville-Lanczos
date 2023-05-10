@@ -36,11 +36,19 @@ class Lanczos():
                 self.logger.log(i,f_i,a[-1],b[-1])
             b.append(b_ip)
             f_ip = self.Liouvillian(H,f_i)
-            a_i = self.inner_prod(f_ip,f_i)
+            try:
+                a_i = self.inner_prod(f_ip,f_i)
+                a.append(a_i)
+            except:
+                return a,b
             f_ip = self.sum(f_ip,- a_i*f_i,- b[-1]*f_im)
-            b_ip = np.sqrt(self.inner_prod(f_ip,f_ip))
+            try:
+                b2 = self.inner_prod(f_ip,f_ip)
+                assert b2>0
+                b_ip = np.sqrt(b2)
+            except:
+                return a,b
             f_ip = f_ip / b_ip
-            a.append(a_i)
             f_i,f_im = f_ip,f_i
         if self.logger:
             self.logger.log(i,f_i,a[-1],b[-1])

@@ -29,7 +29,7 @@ requirements.txt
 
 #subproject
 pauliarray/*
-
+article/*
 #qiskit binary structs
 *.qpy
 *.qasm
