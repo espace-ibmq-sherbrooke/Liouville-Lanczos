@@ -4,6 +4,9 @@
 # Python virtual environment
 env/
 
+#pictures
+*.png
+
 # Compiled Python files
 *.pyc
 *.pickle

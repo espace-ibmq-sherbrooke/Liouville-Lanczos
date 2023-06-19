@@ -10,7 +10,7 @@ from qiskit.transpiler.passes import (
 from LiouvilleLanczos.Quantum_computer.QC_lanczos import Liouvillian,inner_product,sum
 
 from LiouvilleLanczos.Lanczos import Lanczos
-from LiouvilleLanczos.matrix_impl import Matrix_inner_product,Matrix_Liouvillian,Matrix_sum
+from LiouvilleLanczos.matrix_impl import MatrixState_inner_product,Matrix_Liouvillian,Matrix_sum
 
 from LiouvilleLanczos.Green import CF_Green
 
@@ -115,7 +115,7 @@ print("circuit", E_SS1)
 #%%
 eps = 1e-5
 estimator_lanczos = Lanczos(inner_product(SS1,estimator,qubit_converter,eps),Liouvillian(eps),sum(eps))
-matrix_lanczos = Lanczos(Matrix_inner_product(S[:,0]),Matrix_Liouvillian(),Matrix_sum())
+matrix_lanczos = Lanczos(MatrixState_inner_product(S[:,0]),Matrix_Liouvillian(),Matrix_sum())
 #%%
 a_mat,b_mat = matrix_lanczos(Hubbard_matrix,C1u_mat,10)
 # %%

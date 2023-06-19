@@ -2,11 +2,16 @@
 from LiouvilleLanczos.Quantum_computer.QC_lanczos import Liouvillian,inner_product,sum
 
 from LiouvilleLanczos.Quantum_computer.Hamiltonian import Line_Hubbard,BoundaryCondition
+from importlib import reload
 
+import LiouvilleLanczos.Lanczos
 from LiouvilleLanczos.Lanczos import Lanczos
-from LiouvilleLanczos.matrix_impl import Matrix_inner_product,Matrix_Liouvillian,Matrix_sum
+from LiouvilleLanczos.matrix_impl import MatrixState_inner_product,Matrix_Liouvillian,Matrix_sum
 from LiouvilleLanczos.Quantum_computer.Mapping import find_best_layout
 from LiouvilleLanczos.Green import CF_Green
+
+reload(LiouvilleLanczos.Lanczos)
+Lanczos = LiouvilleLanczos.Lanczos.Lanczos
 
 from qiskit import qpy
 
@@ -91,7 +96,7 @@ GS_analytical.cz(1,2)
 GS_analytical.swap(1,2)
 print(estimator.run(GS_analytical,HHam).result().values)
 #%%
-matrix_lanczos = Lanczos(Matrix_inner_product(GS_mat),Matrix_Liouvillian(),Matrix_sum())
+matrix_lanczos = Lanczos(MatrixState_inner_product(GS_mat),Matrix_Liouvillian(),Matrix_sum())
 a_mat,b_mat = matrix_lanczos(Hmat,C0_mat,10)
 
 #%%
@@ -214,17 +219,27 @@ with Session(backend=Sher) as session:
     observable = (HHam)
     job1 = estim.run([circuit1,circuit3,circuit5,circuit7],[observable]*4)
 #%%
-with Session(backend=Sher) as session:
-    options = Options()
-    options.optimization_level = 3
-    options.transpilation.approximation_degree=1.0
-    options.transpilation.seed = 0
-    init_layout,GS_opt = find_best_layout(GS_analytical,backend,10,seed = 50)
-    options.transpilation.initial_layout=init_layout
-    circuit = GS_analytical.copy()
-    estim = Estimator(session=session,options=options)
-    eps = 1e-3 
-    lanczos = Lanczos(inner_product(circuit,estim,qubit_converter,eps),Liouvillian(eps),sum(eps))
-    a,b = lanczos(Ham,C0,10,5e-2)
+# with Session(backend=Sher) as session:
+#     options = Options()
+#     backend = backends[session.backend()]
+#     options.optimization_level = 3
+#     options.resilience_level = 2
+#     options.environment.job_tags = ["Lanczos","ZNE","Test_output_structure"]
+#     options.transpilation.approximation_degree=1.0
+#     options.transpilation.seed = 0
+#     options.execution.shots=10000
+#     init_layout,GS_opt = find_best_layout(GS_analytical,backend,10,seed = 50)
+#     options.transpilation.initial_layout=init_layout
+#     circuit = GS_analytical.copy()
+#     estim = Estimator(session=session,options=options)
+#     eps = 1e-3 
+#     lanczos = Lanczos(inner_product(circuit,estim,qubit_converter,eps),Liouvillian(eps),sum(eps))
+#     # a,b = lanczos(Ham,C0,10,5e-2)
+#     out_res2 = estim.run(GS_analytical,HHam)
+#     options.resilience_level = 1
+#     estim = Estimator(session=session,options=options)
+#     out_res1 = estim.run(GS_analytical,HHam)
+
+jobs = ['chjrdi5nopt07g2419ag','chjrdic6f7i49rouaq7g']
 
 # %%
