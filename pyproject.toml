@@ -12,17 +12,19 @@ dependencies = [
     "scipy",
     "qiskit",
     "qiskit-nature >= 0.5",
-    "qiskit_ibm_provider",
-    "quimb"
 ]
 
 [project.optional-dependencies]
+TensorNetworks = [
+    "quimb",
+]
 pauliarray = [
     "pauliarray",
 ]
 test = [
     "matplotlib",
     "seaborn",
+    "qiskit_ibm_provider",
 ]
 doc = ["sphinx"]
 [project.urls]
