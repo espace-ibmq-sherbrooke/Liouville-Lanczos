@@ -20,6 +20,7 @@ from qiskit.primitives import BackendEstimator
 
 from qiskit_nature.second_q.mappers import JordanWignerMapper,QubitConverter
 from qiskit_nature.second_q.operators import FermionicOp
+from qiskit.quantum_info.operators import SparsePauliOp
 from qiskit import QuantumCircuit
 import numpy as np
 from LiouvilleLanczos.Quantum_computer.err_mitig_inprod import twirled_inner_product 
@@ -152,18 +153,51 @@ from qiskit_ibm_runtime.options import (
     
 )
 
+#<First time only>
+# QiskitRuntimeService.save_account(channel="ibm_quantum", token="MY_IBM_QUANTUM_TOKEN")
+#<\First time only>
+service_charlebois = QiskitRuntimeService(
+    channel="ibm_quantum", instance="ibm-q-qida/iq-quantum/charlebois"
+)
 service_algolab = QiskitRuntimeService(
     channel="ibm_quantum", instance="ibm-q-qida/iq-quantum/algolab"
 )
 #%%
 Sher = service_algolab.backend("ibm_sherbrooke")
-wash = service_algolab.backend("ibm_washington")
 cair =  service_algolab.backend("ibm_cairo")
 kolk =  service_algolab.backend("ibmq_kolkata")
 hanoi =  service_algolab.backend("ibm_hanoi")
 auck =  service_algolab.backend("ibm_auckland")
+backends = {"ibmq_kolkata":kolk,"ibm_sherbrooke":Sher}
+
+
 #%%
-backends = {"ibmq_kolkata":kolk,"ibm_sherbrooke":Sher,"ibm_washington":wash}
+init_layout,GS_opt = find_best_layout(GS_analytical,Sher,10,seed = 50)
+options = Options()
+options.transpilation.initial_layout=init_layout
+options.optimization_level = 3
+options.resilience_level = 1
+estim = Estimator(session=Sher,options=options)
+job1 = estim.run([GS_analytical],[HHam])
+job1.result().values
+#%% exemple avec une session
+options = Options()
+options.optimization_level = 3
+options.resilience_level = 1
+with Session(backend=Sher) as session:
+    backend = backends[session.backend()]
+    init_layout,GS_opt = find_best_layout(GS_analytical,backend,10,seed = 50)
+    options.transpilation.initial_layout=init_layout
+    circuit = GS_analytical.copy()
+    num_qubits = circuit.num_qubits
+    options.environment.job_tags = ["resil1","Hubbard","opt_layout"]
+    estim = Estimator(session=session,options=options)
+    observable = HHam
+    job1 = estim.run([circuit],[observable])
+    job2 = estim.run([circuit]*2,[observable,observable-E*SparsePauliOp("I"*num_qubits)])
+    E = job1.result().values[0]
+    E2 = job2.result().values[0]
+#%%
 #%% compute eigenenergy with QC
 options = Options()
 options.optimization_level = 3

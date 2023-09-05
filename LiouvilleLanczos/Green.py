@@ -140,9 +140,9 @@ class PolyCF_Green(Poly_Green_Base):
     def __init__(self,a,b,moments,CF_Green:Optional[CF_Green]=None) -> None:
         super().__init__(moments)
         if CF_Green is None:
-            self._Gd = CF_Green(a,b)
+            self.__Gd = CF_Green(a,b)
         else:
-            self._Gd = CF_Green
+            self.__Gd = CF_Green
     @classmethod
     def from_shared_CF(cls,moments,CF_green:CF_Green):
         return PolyCF_Green(None,None,moments,CF_Green)
@@ -150,11 +150,14 @@ class PolyCF_Green(Poly_Green_Base):
     def complex_weight(self):
         return self._Gd
     @property
+    def _Gd(self):
+        return self.__Gd
+    @property
     def alpha(self):
-        return self.Gd.alpha
+        return self._Gd.alpha
     @property
     def beta(self):
-        return self.Gd.beta
+        return self._Gd.beta
     def to_Lehmann(self):
         return PolyLehmann_Green(self.alpha,self.beta,self.moments)
 

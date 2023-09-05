@@ -1,0 +1,5 @@
+La bibliothèque logicielle Liouville-Lanczos est conçue pour le calcul et la manipulation de fonction de Green de hamiltonien quantique de taille intermédiaire.
+Une des façons d'accomplir (en principe) cet objectif est à l'aide d'algorithme quantique hybride. Plus précisément, les méthodes implémentées ont besoin qu'on leur fournisse l'état d'équilibre du système sous la forme d'un circuit quantique Qiskit.
+Étant donné cet état et un opérateur d'excitation, l'algorithme va produire une séquence d'observables progressivement plus compliqués dont les valeurs moyennes sont les coefficients d’une décomposition de la fonction de Green. Ces coefficients permettent une reconstruction approximative de la fonction de Green.
+
+Les observables sont représentés classiquement et l'implémentation ici présente n'est pas suffisamment optimisée pour calculer un grand nombre de coefficients. De plus, les ordinateurs quantiques disponibles à l'heure actuelle ne sont pas en mesure d'effectuer des calculs précis avec des modèles de plus de 4 qubits.

@@ -24,15 +24,24 @@ class DensityMatrix_inner_product():
         T = Bd@A
         rP = self.DM@P
         rT = self.DM@T
-        out = np.trace(rP)+np.trace(rT)
+        O = np.trace(rP)+np.trace(rT)
        #debug
-        I = np.trace(  rP + rT )
-        II = np.trace(  self.DM@(P + T) )
-        assert I-out < 1e-4
-        assert II-out < 1e-4
-        # print(I-out)
+       # for some reason, the different possible order 
+       # of evaluation don't behave in the same way. 
+       # They give drastically different results when close to Eigenspace depletion.
+        # I = np.trace(  rP + rT )
+        II = np.trace(  self.DM@(P + T) ) #most reliably precise so far.
+        III = np.einsum('ij,ji',self.DM,P+T) #in principle slightly faster than 2, untested
+        # IIII = np.einsum('ij,jk,ki',self.DM,A,Bd) + np.einsum('ij,jk,ki',self.DM,Bd,A)
+        out = II
+        print(f"DMIP instability 3:{III}, 2:{II}, 0:{O}")
+        # assert abs(I-out) < 1e-10
+        # assert abs( II-out) < 1e-10
+        # assert abs( III-out) < 1e-10
+        # assert abs( IIII-out) < 1e-10
+        # assert abs( O-out) < 1e-10
        #!debug 
-        return I
+        return out
     
 class Hamiltonian_inner_product():
     def __call__(self,A,B):
