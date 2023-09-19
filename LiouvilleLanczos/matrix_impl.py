@@ -1,24 +1,25 @@
 import numpy as np
-class Matrix_Liouvillian():
+from .Lanczos_components import Inner_product,Liouvillian,Summation
+class Matrix_Liouvillian(Liouvillian):
     def __call__(self,H,f):
         return H@f-f@H
 
-class Matrix_Hamiltonian():
+class Matrix_Hamiltonian(Liouvillian):
     def __init__(self, E0,sign):
         self.E0 = E0
         self.sign = sign
     def __call__(self,H,f):
         return self.sign*(H-self.E0*np.eye(H.shape[0]))@f
 
-class Matrix_sum():
+class Matrix_sum(Summation):
     def __call__(self,*X):
         X = np.array(X)
         return np.add.reduce(X,axis=0)
 
-class DensityMatrix_inner_product():
+class DensityMatrix_inner_product(Summation):
     def __init__(self,DensityMatrix):
         self.DM =DensityMatrix
-    def __call__(self, A,B) -> float:
+    def __call__(self, A,B,*args,**kwargs) -> float:
         Bd = np.conj(B.T)
         P = A@Bd
         T = Bd@A
@@ -43,14 +44,14 @@ class DensityMatrix_inner_product():
        #!debug 
         return out
     
-class Hamiltonian_inner_product():
+class Hamiltonian_inner_product(Inner_product):
     def __call__(self,A,B):
         return  np.conj(A.T)@B
     
-class MatrixState_inner_product():
+class MatrixState_inner_product(Inner_product):
     def __init__(self,state):
         self.state =state
-    def __call__(self, A,B) -> float:
+    def __call__(self, A,B,*args,**kwargs) -> float:
         Bd = np.conj(B.T)
         # f = A@Bd + Bd@A
         sa = A@self.state

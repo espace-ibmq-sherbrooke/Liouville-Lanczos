@@ -2,8 +2,10 @@ from quimb.tensor import MatrixProductOperator as MPO
 from quimb.tensor import MatrixProductState as MPS
 from .MPO_compress import MPO_compressing_sum
 
+from ..Lanczos_components import Inner_product,Summation
+from ..Lanczos_components import Liouvillian as BaseLiouvillian
 
-class Liouvillian:
+class Liouvillian(BaseLiouvillian):
     def __init__(self,eps) -> None:
         self.eps = eps
 
@@ -16,10 +18,10 @@ class Liouvillian:
         H.lower_ind_id = HO.lower_ind_id
         return MPO_compressing_sum([HO,OH],self.eps,self.eps*0.5)
     
-class inner_product:
+class inner_product(Inner_product):
     def __init__(self,ket:MPS):
         self.ket = ket
-    def __call__(self,A:MPO,B:MPO):
+    def __call__(self,A:MPO,B:MPO,*args,**kwargs):
         """The Liouvillian inner product for the computation
         of zero temperature Fermionic Green's function: <{A,B^\dagger}>_{psi}"""
         BH = B.H
@@ -38,7 +40,7 @@ class inner_product:
         AB = (bra|A|BH|self.ket).contract()
         return AB+BA
     
-class Compressing_operator_sum:
+class Compressing_operator_sum(Summation):
     def __init__(self,eps) -> None:
         self.eps = eps
     def __call__(self,*ops):
