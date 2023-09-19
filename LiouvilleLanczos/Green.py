@@ -5,7 +5,7 @@ from numpy import polynomial as poly
 from numpy.typing import NDArray
 from typing import Optional,Callable
 from scipy.sparse import csr_array
-from multimethod import multimethod
+# from multimethod import multimethod
 
 class Green_function_base(ABC):
     @abstractmethod
