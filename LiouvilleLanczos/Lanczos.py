@@ -21,9 +21,9 @@ class Lanczos():
         i=0
         b = [np.sqrt(self.inner_prod(f_0,f_0,Name="b0"))]
         f_i = f_0/b[-1]
-        multimoments = [[self.inner_prod(o,f_i) for o in other_ops]]
+        multimoments = [[self.inner_prod(o,f_i,Name=f"m{m}_{0}") for m,o in enumerate(other_ops)] ]
         f_ip = self.Liouvillian(-H,f_i)
-        a_i = self.inner_prod(f_ip,f_i,name="a0")
+        a_i = self.inner_prod(f_ip,f_i,Name="a0")
         if self.logger:
             self.logger(i,f_i,a_i,b)
         f_ip = self.sum(f_ip, - a_i*f_i)
@@ -48,7 +48,7 @@ class Lanczos():
             b.append(b_ip)
             f_ip = self.sum(f_ip,- a_i*f_i,- b[-1]*f_im)
             try:
-                b2 = self.inner_prod(f_ip,f_ip,name=f"b^2_{i+1}")
+                b2 = self.inner_prod(f_ip,f_ip,Name=f"b^2_{i+1}")
                 assert b2>self.epsilon , f"b^2={b2} is smaller than {self.epsilon}, terminating"
                 b_ip = np.sqrt(b2)
             except Exception as e:

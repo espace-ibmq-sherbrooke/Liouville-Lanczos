@@ -38,17 +38,17 @@ class inner_product(Inner_product):
         #imaginary contribution are necessarily error.
         try: #Add name to the list of tag for this job.
             if Name is not None:
-                opt = self.estimator.options
-                opt.environment.job_tags.append(Name)
-                self.estimator.options=opt
+                tags = self.estimator.options.environment['job_tags']
+                tags.append(Name)
+                self.estimator.set_options(job_tags=tags)
         except:
             ...
         out = np.real(self.estimator.run(self.state,self.mapper.convert(f)).result().values[0])
         try: #remove the name from the list of tags of the upcoming jobs
             if Name is not None:
-                opt = self.estimator.options
-                opt.environment.job_tags = opt.environment.job_tags[:-1]
-                self.estimator.options=opt
+                tags = self.estimator.options.environment['job_tags']
+                tags = tags[:-1] # removes the appended name.
+                self.estimator.set_options(job_tags=tags)
         except:
             ...
         return out
