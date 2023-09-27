@@ -20,6 +20,8 @@ from ..Lanczos_components import Liouvillian as BaseLiouvillian
 
 def relative_simplify(ope:op.SparseLabelOp,eps:float):
     v = max(ope.items(),key = lambda x: np.abs(x[1]))[1]
+    if isinstance(ope, op.FermionicOp):
+        ope = ope.normal_order()
     return ope.simplify(eps*v)
 
     
