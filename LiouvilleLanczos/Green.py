@@ -7,18 +7,25 @@ from typing import Optional,Callable
 from scipy.sparse import csr_array
 # from multimethod import multimethod
 
-class Green_function_base(ABC):
+class Callable_Green_function_base(ABC):
+    """
+    trait for Green's function that can be evaluated at any complex frequencies
+    """
     @abstractmethod
-    def __call__(self,freq):
+    def __call__(self,freq:complex):
         ...
 
-class integrable_Green_function_base(Green_function_base):
-    """Green function that implement an efficient "integrate" method"""
+class integrable_Green_function_base(Callable_Green_function_base):
+    """trait for Green's functions that implement an efficient "integrate" method"""
     @abstractmethod
     def integrate(self,frequency_weights_function:Callable):
         ...
 
-class Tcheb1st_Green(Green_function_base):
+class Tcheb1st_Green(Callable_Green_function_base):
+    """
+    Tchebyshev polynomial of the first kind reprensented
+    Green's function
+    """
     def Gn(w,n):
         s = 1j*np.sqrt(1-(w-0.00000000000001j)**2)
         return -((w+s)**(n))/s
@@ -31,7 +38,12 @@ class Tcheb1st_Green(Green_function_base):
         M = self.scale * np.array( [np.transpose(Tcheb1st_Green.Gn(sw,n)) for n,m in enumerate(self.mu) ])
         return M@self.mu
     
-class Tcheb2nd_Green(Green_function_base):
+class Tcheb2nd_Green(Callable_Green_function_base):
+    """
+    Tchebyshev polynomial of the second kind reprensented
+    Green's function.
+    Correctness to be verified...
+    """
     def Gn(w,n):
         s = 1j*np.sqrt(1-(w-0.00000000000001j)**2)
         return ((w+s)**(n+1))
@@ -47,7 +59,10 @@ class Tcheb2nd_Green(Green_function_base):
 
     
 
-class CF_Green(Green_function_base):
+class CF_Green(Callable_Green_function_base):
+    """
+    continued fraction reprensation Green's function
+    """
     def __init__(self,a,b):
         self._a = a
         self._b = b
@@ -73,7 +88,10 @@ class CF_Green(Green_function_base):
         E,U = np.linalg.eigh(M)
         return Lehmann_Green(E,self._b[0]*U[0,:]) 
 
-class Poly_Green_Base(Green_function_base):
+class Poly_Green_Base(Callable_Green_function_base):
+    """
+    Generic base for polynomial specified by the recursion polynomial.
+    """
     def __init__(self,moments) -> None:
         super().__init__()
         self._mu = moments
@@ -109,7 +127,42 @@ class Poly_Green_Base(Green_function_base):
     def next_poly(self,freq,n,poly_n,poly_nm1):
         return self.beta[n+1]**-1*( (freq-self.alpha[n])*poly_n - self.beta[n]*poly_nm1)
     
-    def primary_poly(self,w):
+    def eval_poly(self,w,kind,order):
+        """
+        evaluate the primary or secondary polynomial of a given order at specified frequency grid
+        """
+        assert(kind == 0 or kind == 1 or kind == "primary" or kind == "secondary")
+        if kind != 0:
+            #reduce the number of possibilities
+            kind = (kind == "secondary")*1
+        if kind == 0:
+            n = 0
+            Ln = self.primary_0()
+            Lnm1 = 0 
+        if kind == 1:
+            Lnm1 = 0
+            if order == 0:
+                return Lnm1
+            n = 1
+            Ln = self.secondary_1()
+        while n<order:
+            n+=1
+            Ln,Lnm1 = self.next_poly(w,n,Ln,Lnm1),Ln
+        return Ln
+
+
+    def secondary_poly_sum(self,w):
+        Qn = self.secondary_1()
+        Qnm1 = 0 
+        out = self.moments[1]*Qn
+        n=1
+        for mu in self.moments[2:]:
+            Qn,Qnm1 = self.next_poly(w,n,Qn,Qnm1),Qn
+            out+=Qn*mu
+            n+=1
+        return out
+
+    def primary_poly_sum(self,w):
         Ln = self.primary_0()
         Lnm1 = 0 
         out = self.moments[0]*Ln
@@ -118,23 +171,13 @@ class Poly_Green_Base(Green_function_base):
             Ln,Lnm1 = self.next_poly(w,n,Ln,Lnm1),Ln
             out+=Ln*mu
             n+=1
+        return out
             
     def __call__(self,freq):
         Gf = self._Gd(freq)
-        Ln = self.primary_0()
-        Lnm1 = 0 
-        out = self._mu[0]*Gf*Ln
-        Qn = self.secondary_1()
-        Qnm1 = 0
-        n=0
-        Ln,Lnm1 = self.next_poly(freq,n,Ln,Lnm1),Ln
-        out += self.moments[1]*(Qn+Ln*Gf)
-        for i,mu_n in enumerate(self.moments[2:-1]):
-            n=i+1
-            Ln,Lnm1 = self.next_poly(freq,n,Ln,Lnm1),Ln
-            Qn,Qnm1 = self.next_poly(freq,n,Qn,Qnm1),Qn
-            out += mu_n*(Qn+Ln*Gf)
-        return out
+        L = self.primary_poly_sum(freq)
+        Q = self.secondary_poly_sum(freq)
+        return Q+L*Gf
     
 class PolyCF_Green(Poly_Green_Base):
     def __init__(self,a,b,moments,CF_Green:Optional[CF_Green]=None) -> None:
@@ -227,7 +270,7 @@ class PolyLehmann_Green(Poly_Green_Base,integrable_Green_function_base):
         return self.__b
     
     def integrate(self,frequency_weights_function):
-        mod_fw = lambda w: self.primary_poly(w)*frequency_weights_function(w)
+        mod_fw = lambda w: self.primary_poly_sum(w)*frequency_weights_function(w)
         return self._Gd.integrate(mod_fw)
     
 class Green_matrix(integrable_Green_function_base):
