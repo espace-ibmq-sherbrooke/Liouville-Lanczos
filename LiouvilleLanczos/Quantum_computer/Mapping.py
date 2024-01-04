@@ -1,3 +1,7 @@
+# The following code is based on mapomatic usage exemple, with minimal modifications,
+# as such we make no claim of ownership. This file is licensed under the Apache 
+# License, Version 2.0. You may obtain a copy of this license 
+# at http://www.apache.org/licenses/LICENSE-2.0.
 
 from mapomatic import deflate_circuit, evaluate_layouts, matching_layouts
 from qiskit import transpile,QuantumCircuit,ClassicalRegister
@@ -5,22 +9,29 @@ import numpy as np
 
 
 """
-Fiddling to allow sub-circuit optimization. Might break with qiskit updates, i'm afraid
-i'm relying on implementation details.
+
+Fiddling to allow sub-circuit optimization. Mappomatic reorder the qubits in a way that 
+doesn't tell us the correspondance with the orginial qubits. Tracks qubit permutation
+with by adding measurements to the end of the supplied circuit. This create a labeling 
+correspondance between the classical and quantum bits, and the classical bits labeling is 
+unchanged by the optimization process.
+
+Use find_best_layout to obtain a backend optimized layout for your circuit.
 
 """
 
 def find_best_layout(circuit:QuantumCircuit,backend,num_tries,level=3,seed=132423,initial_layout = None):
+    """
+    The optimization process is stochastic, num_tries is the number of trials to perform.
+    Supply the circuit to optimize, a backend and a number of trials.
+    """
     nqbit = circuit.num_qubits
     circuit = circuit.copy()
     permutation_tracking(circuit)
     circuits_ts = transpile(
         [circuit] * num_tries, backend, optimization_level=level, seed_transpiler=seed,initial_layout=initial_layout
     )
-    if 'ecr' in backend.configuration().basis_gates:
-        egate = 'ecr'
-    else:
-        egate = 'cx'
+    egate = detect_entangling_gate(backend)
     cx_counts = [circuits_ts[idx].count_ops()[egate] for idx in range(num_tries)]
     best_idx = np.argmin(cx_counts)
     best_circuit = circuits_ts[best_idx]
@@ -32,6 +43,15 @@ def find_best_layout(circuit:QuantumCircuit,backend,num_tries,level=3,seed=13242
         deflated_circuit, layouts, backend
     )  # cost_function = cost_func
     return apply_permutation(scored_layouts,permutation,deflated_circuit)
+
+def detect_entangling_gate(backend):
+    pot_entaglers=["ecr","cz"] #Add new hardware entangling gate as hardware evolve
+    egate='cx' #default value, most backends uses this for now.
+    for entangler in pot_entaglers:
+        if entangler in backend.configuration.basis_gates:
+            egate = entangler
+    return egate
+
 
 def apply_permutation(scored_layouts,permutation,deflated_circuit):
     #apply the permutation
@@ -60,8 +80,6 @@ def extract_physical_mapping(circuit:QuantumCircuit,nqbits):
            for r in cbit:
                if r[0].name == "perm":
                     qbit = circuit.find_bit(qubit).registers
-                    # print(qbit[0][0].name) I'm a bit worried that in some situtation it wont fetch the right qubit register.
-                    # Currently, a transpiled circuit only has one quantum register "q"
                     mapping[qbit[0][1]] = r[1]
                     break
     return mapping
