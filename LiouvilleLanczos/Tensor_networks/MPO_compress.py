@@ -560,16 +560,12 @@ def MPO_compressor(
 ):
 	return MPO_compressing_sum([MPO], tol, crit, max_bond)
 
-def compressing_commutator(A:qtn.MatrixProductOperator,B:qtn.MatrixProductOperator,tol:float,crit:float,max_bond=None):
+def MPOcs_assert_coherent_index_label(MPOs:List[qtn.MatrixProductOperator]):
 	"""
-	compute the commutator of the MPOs A and B
+	check that all the free indices are compatible across all input MPO,
+	upon success, return a ready to optimize output MPO. 
+	It is a minor optimization to bundle those two operation together.
 	"""
-	raise NotImplementedError()
-
-def MPO_compressing_sum(
-	MPOs: List[qtn.MatrixProductOperator], tol: float, crit: float, max_bond=None
-):
-	# check free indices are compatible across all input MPO
 	mpo0 = MPOs[0]
 	N = mpo0.L
 	tens_arr = [
@@ -604,6 +600,15 @@ def MPO_compressing_sum(
 		lower_ind_id=mpo0.lower_ind_id,
 		site_tag_id="out{}",
 	)
+	return out
+
+
+def MPO_compressing_sum(
+	MPOs: List[qtn.MatrixProductOperator], tol: float, crit: float, max_bond=None
+):
+	out = MPOcs_assert_coherent_index_label(MPOs)
+	mpo0 = MPOs[0]
+	N = mpo0.L
 	oc = compute_oc(MPOs[0])
 	if oc[0] == oc[1]:
 		oc = oc[0]
@@ -612,7 +617,7 @@ def MPO_compressing_sum(
 	norms = [x @ x.H for x in out]
 	tgt_norm = np.mean(norms)
 	envs = [mpompo_env_prep(out, m, tgt_norm, oc) for m in MPOs]
-	cost = 1.0e18
+	cost = 1.0e18 # A huge dummy value.
 	new_cost = 0
 	direction = 1
 	iter_count = 0
@@ -627,8 +632,90 @@ def MPO_compressing_sum(
 		if iter_count > 1000:
 			print("Compressing sum failed to converge")
 			break
-	# print("iterations: ", iter_count)
-	# print(norms)
+	return out
+
+def MPO_Liouville_assert_coherent_index_label(MPOs:List[qtn.MatrixProductOperator],density_matrix:qtn.MatrixProductOperator):
+	"""
+	check that all the free indices are compatible across all input MPO,
+	upon success, return a ready to optimize output MPO. 
+	"""
+	N = density_matrix.L
+	mpsi_n = 0
+	for mpsi in MPOs[]:
+		assert mpsi.L == N
+		c = 0
+		while c < N:
+			x = mpsi[c]
+			d = density_matrix[c]
+			dup = d.ind_size(density_matrix.upper_ind_id.format(c))
+			ddn = x.ind_size(density_matrix.lower_ind_id.format(c))
+			sup = x.ind_size(mpsi.upper_ind_id.format(c))
+			sdn = x.ind_size(mpsi.lower_ind_id.format(c))
+			assert sup == ddn #compatibility for inner product
+			assert sdn == dup #compatibility for inner product
+			assert dup == ddn #density matrix is hermitian, this condition is a corrolary
+			c += 1
+		mpsi.upper_ind_id = MPOs[0].upper_ind_id
+		mpsi.lower_ind_id = MPOs[0].lower_ind_id
+		mpsi_n += 1
+	return True
+
+def random_MPO_from(mpo:qtn.MatrixProductOperator,periodic_boundary:bool=False):
+	tens_arr = [
+		np.random.rand(
+			4,
+			4,
+			mpo[c].ind_size(mpo.upper_ind_id.format(c)),
+			mpo[c].ind_size(mpo.lower_ind_id.format(c)),
+		)
+		for c, x in enumerate(mpo)
+	]
+	if not periodic_boundary:
+		tens_arr[0] = tens_arr[0][0, :, :, :]
+		tens_arr[-1] = tens_arr[-1][:, 0, :, :]
+	out = qtn.MatrixProductOperator(
+		tens_arr,
+		shape="lrud",
+		upper_ind_id=mpo.upper_ind_id,
+		lower_ind_id=mpo.lower_ind_id,
+		site_tag_id="out{}",
+	)
+	return out
+
+def MPO_Liouville_compressing_sum(
+	MPOs: List[qtn.MatrixProductOperator],Density_matrix:qtn.MatrixProductOperator, tol: float, crit: float, max_bond=None
+):
+	"""
+	Compress the MPO with respect to the inner product $(A,B)_\rho = Tr[\rho(A^\dagger B + B A^\dagger)]$ where \rho is the supplied density matrix MPO.
+	"""
+	MPO_Liouville_assert_coherent_index_label(MPOs,Density_matrix)
+	out = random_MPO_from(Density_matrix)
+	mpo0 = MPOs[0]
+	N = mpo0.L
+	oc = compute_oc(MPOs[0])
+	if oc[0] == oc[1]:
+		oc = oc[0]
+	else:
+		oc = 0
+	#got here
+	norms = [x @ x.H for x in out]
+	tgt_norm = np.mean(norms)
+	envs = [mpompo_env_prep(out, m, tgt_norm, oc) for m in MPOs]
+	cost = 1.0e18 # A huge dummy value.
+	new_cost = 0
+	direction = 1
+	iter_count = 0
+	while True:
+		new_cost = sum_sweep(
+			MPOs, out, envs, direction, tol, oc, norms, max_bond=max_bond
+		)
+		if abs(2 * (new_cost - cost) / (new_cost + cost)) < crit:
+			break
+		cost = new_cost
+		iter_count += 1
+		if iter_count > 1000:
+			print("Compressing sum failed to converge")
+			break
 	return out
 
 
