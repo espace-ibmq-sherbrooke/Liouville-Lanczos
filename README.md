@@ -21,4 +21,4 @@ With current hardware, the fully classical algorithms are faster and more accura
 
 Alternatively, for a devellopement installation, you can use flit. Make sure to use the flit installation of your target environment:
 
-3. flit install -s
+3. ```flit install -s``` in the project folder
