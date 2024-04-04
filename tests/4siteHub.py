@@ -7,7 +7,7 @@ from qiskit.primitives import Estimator as exactEstimator
 from qiskit.transpiler.passes import (
     RemoveBarriers,
 )
-from LiouvilleLanczos.Quantum_computer.QC_lanczos import Liouvillian,inner_product,sum
+from LiouvilleLanczos.Quantum_computer.QC_lanczos import Liouvillian_slo,inner_product_slo,sum_slo
 
 from LiouvilleLanczos.Lanczos import Lanczos
 from LiouvilleLanczos.matrix_impl import MatrixState_inner_product,Matrix_Liouvillian,Matrix_sum
@@ -114,7 +114,7 @@ E_SS1 = estimator.run(SS1,HAM).result().values[0]
 print("circuit", E_SS1)
 #%%
 eps = 1e-5
-estimator_lanczos = Lanczos(inner_product(SS1,estimator,qubit_converter,eps),Liouvillian(eps),sum(eps))
+estimator_lanczos = Lanczos(inner_product_slo(SS1,estimator,qubit_converter,eps),Liouvillian_slo(eps),sum_slo(eps))
 matrix_lanczos = Lanczos(MatrixState_inner_product(S[:,0]),Matrix_Liouvillian(),Matrix_sum())
 #%%
 a_mat,b_mat = matrix_lanczos(Hubbard_matrix,C1u_mat,10)

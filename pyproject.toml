@@ -18,9 +18,9 @@ dependencies = [
 TensorNetworks = [
     "quimb",
 ]
-pauliarray = [
-    "pauliarray",
-]
+#pauliarray = [
+#    "pauliarray",
+#]
 test = [
     "matplotlib",
     "seaborn",
@@ -28,4 +28,4 @@ test = [
 ]
 doc = ["sphinx"]
 [project.urls]
-Home = "https://github.com/espace-ibmq-sherbrooke/wFunction.git"
+Home = "https://github.com/algolab-quantique/wFunction.git"

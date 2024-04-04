@@ -1,5 +1,5 @@
 #%%
-from LiouvilleLanczos.Quantum_computer.QC_lanczos import Liouvillian,inner_product,sum
+from LiouvilleLanczos.Quantum_computer.QC_lanczos import Liouvillian_slo,inner_product_slo,sum_slo
 
 from LiouvilleLanczos.Quantum_computer.Hamiltonian import Line_Hubbard,BoundaryCondition
 from importlib import reload
@@ -122,7 +122,7 @@ print(estimator.run(GS,HHam).result().values)
 print(estimator.run(GS_analytical,HHam).result().values)
 #%%
 eps = 1e-6
-lanczos = Lanczos(inner_product(GS_analytical,estimator,qubit_converter,eps),Liouvillian(eps),sum(eps))
+lanczos = Lanczos(inner_product_slo(GS_analytical,estimator,qubit_converter,eps),Liouvillian_slo(eps),sum_slo(eps))
 #%%
 a_sim5,b_sim5 = lanczos(Ham,C0,10,5e-3)
 

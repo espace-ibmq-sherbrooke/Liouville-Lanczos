@@ -6,10 +6,12 @@
 from mapomatic import deflate_circuit, evaluate_layouts, matching_layouts
 from qiskit import transpile,QuantumCircuit,ClassicalRegister
 import numpy as np
+from qiskit.transpiler.passes import RemoveFinalMeasurements
+from qiskit.transpiler import PassManager
 
+rm_final_measure = PassManager(RemoveFinalMeasurements())
 
 """
-
 Fiddling to allow sub-circuit optimization. Mappomatic reorder the qubits in a way that 
 doesn't tell us the correspondance with the orginial qubits. Tracks qubit permutation
 with by adding measurements to the end of the supplied circuit. This create a labeling 
@@ -36,8 +38,8 @@ def find_best_layout(circuit:QuantumCircuit,backend,num_tries,level=3,seed=13242
     best_idx = np.argmin(cx_counts)
     best_circuit = circuits_ts[best_idx]
     permutation = mapping_to_permutation(extract_physical_mapping(best_circuit,nqbit))
-    best_circuit.data = best_circuit.data[:-(nqbit+1)] #cleanup the permutation tracking elements
     deflated_circuit = deflate_circuit(best_circuit)
+    # deflated_circuit = rm_final_measure.run(deflated_circuit) #That was a bad idea
     layouts = matching_layouts(deflated_circuit, backend)
     scored_layouts = evaluate_layouts(
         deflated_circuit, layouts, backend
@@ -47,9 +49,18 @@ def find_best_layout(circuit:QuantumCircuit,backend,num_tries,level=3,seed=13242
 def detect_entangling_gate(backend):
     pot_entaglers=["ecr","cz"] #Add new hardware entangling gate as hardware evolve
     egate='cx' #default value, most backends uses this for now.
-    for entangler in pot_entaglers:
-        if entangler in backend.configuration.basis_gates:
-            egate = entangler
+    try:
+        version = backend.version
+    except:
+        version = 1
+    if version == 2:
+        for entangler in pot_entaglers:
+            if entangler in backend.configuration().basis_gates:
+                egate = entangler
+    else:
+        for entangler in pot_entaglers:
+            if entangler in backend.configuration.basis_gates:
+                egate = entangler
     return egate
 
 

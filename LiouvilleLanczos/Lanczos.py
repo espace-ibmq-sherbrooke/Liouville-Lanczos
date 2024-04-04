@@ -43,7 +43,7 @@ class Lanczos():
         f_ip = self.Liouvillian(-H,f_i)
         a_i = self.inner_prod(f_ip,f_i,Name="a0")
         if self.logger:
-            self.logger(i,f_i,a_i,b)
+            self.logger(i,f_i,a_i,b[-1])
         f_ip = self.sum(f_ip, - a_i*f_i)
         b_ip = np.sqrt(self.inner_prod(f_ip,f_ip,Name="b1"))
         f_ip = f_ip / b_ip
@@ -52,8 +52,6 @@ class Lanczos():
         for i in range(1,max_k):
             if b_ip < min_b:
                 return a,b,multimoments
-            if self.logger:
-                self.logger(i,f_i,a[-1],b[-1])
             multimoments.append([self.inner_prod(o,f_i,Name=f"m{m}_{i}") for m,o in enumerate(other_ops)])
             f_ip = self.Liouvillian(-H,f_i)
             try:
@@ -64,6 +62,8 @@ class Lanczos():
                 print(e)
                 return a,b,multimoments
             b.append(b_ip)
+            if self.logger:
+                self.logger(i,f_i,a[-1],b[-1])
             f_ip = self.sum(f_ip,- a_i*f_i,- b[-1]*f_im)
             try:
                 b2 = self.inner_prod(f_ip,f_ip,Name=f"b^2_{i+1}")

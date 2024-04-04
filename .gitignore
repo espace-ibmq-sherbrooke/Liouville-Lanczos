@@ -18,6 +18,7 @@ __pycache__/
 # Project dependencies (e.g. from pip)
 # Remove this line if you're using Pipenv or Poetry
 requirements.txt
+.pre-commit-config.yaml
 
 # TeX generated files
 *.aux
