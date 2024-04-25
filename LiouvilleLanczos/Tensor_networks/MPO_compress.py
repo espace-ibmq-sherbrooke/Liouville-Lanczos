@@ -26,6 +26,12 @@ Les tenseurs environnements doivent être normalisé de sorte à évité l'appar
 
 """
 
+import quimb.tensor as qtn
+from typing import List
+import numpy as np
+from .generate_simple_MPO import generate_id_MPO
+from typing import Optional
+from .sweeper import Updater,Sweeper
 
 class Env_holder:
 	"""
@@ -45,10 +51,6 @@ class Env_holder:
 		self.env[i][j + 1] = value
 
 
-import quimb.tensor as qtn
-from typing import List
-import numpy as np
-from .generate_simple_MPO import generate_id_MPO
 
 
 def Nroots_prediction(norms: np.array) -> float:
@@ -602,6 +604,41 @@ def MPOcs_assert_coherent_index_label(MPOs:List[qtn.MatrixProductOperator]):
 	)
 	return out
 
+class Density_matrix_weighted_compression(Updater):
+	def __init__(self, MPOs:list[qtn.MatrixProductOperator], density_matrix:qtn.TensorNetwork,tol:float,output_MPO:Optional[qtn.MatrixProductOperator] = None) -> None:
+		super().__init__()
+		if output_MPO is None:
+			self.output_MPO = MPOs[0].copy()
+		else:
+			self.output_MPO = output_MPO
+		self.input_MPOs = MPOs
+		self.density_matrix = density_matrix
+		self.output_env = self.initialize_output_env()
+		self.input_envs = self.initialize_input_envs()
+	def update(self, site: int):
+		return super().update(site)
+	def size(self):
+		return super().size()
+	def easy_index(self):
+		return super().easy_index()
+	def result(self):
+		return super().result()
+	
+	def initialize_output_env(self):
+		"""
+		
+		"""
+		...
+	def initialize_input_envs(self):
+		"""
+		Pour ceux-ci, Je devrait être en mesure de les calculer sans ajustement des indice à tous les coup.
+		Un ajustement initiale devrait faire la job.
+		"""
+		...
+	def compute_left_env(self,further_left_env,mpo_tensorA,mpo_tensorB,density_tensor):
+		...
+	def compute_right_env(self,further_right_env,mpo_tensorA,mpo_tensorB,density_tensor):
+		...
 
 def MPO_compressing_sum(
 	MPOs: List[qtn.MatrixProductOperator], tol: float, crit: float, max_bond=None
@@ -641,7 +678,7 @@ def MPO_Liouville_assert_coherent_index_label(MPOs:List[qtn.MatrixProductOperato
 	"""
 	N = density_matrix.L
 	mpsi_n = 0
-	for mpsi in MPOs[]:
+	for mpsi in MPOs:
 		assert mpsi.L == N
 		c = 0
 		while c < N:
@@ -682,41 +719,17 @@ def random_MPO_from(mpo:qtn.MatrixProductOperator,periodic_boundary:bool=False):
 	)
 	return out
 
+
+
 def MPO_Liouville_compressing_sum(
 	MPOs: List[qtn.MatrixProductOperator],Density_matrix:qtn.MatrixProductOperator, tol: float, crit: float, max_bond=None
 ):
-	"""
+	r"""
 	Compress the MPO with respect to the inner product $(A,B)_\rho = Tr[\rho(A^\dagger B + B A^\dagger)]$ where \rho is the supplied density matrix MPO.
+	La préparation d'environment sera différente: un environment semble nécéssaire pour chacun des termes. Mais tentative de trouver une façon de les combiner son infructueuses.
+	Les sweep seront donc aussi différent.
 	"""
-	MPO_Liouville_assert_coherent_index_label(MPOs,Density_matrix)
-	out = random_MPO_from(Density_matrix)
-	mpo0 = MPOs[0]
-	N = mpo0.L
-	oc = compute_oc(MPOs[0])
-	if oc[0] == oc[1]:
-		oc = oc[0]
-	else:
-		oc = 0
-	#got here
-	norms = [x @ x.H for x in out]
-	tgt_norm = np.mean(norms)
-	envs = [mpompo_env_prep(out, m, tgt_norm, oc) for m in MPOs]
-	cost = 1.0e18 # A huge dummy value.
-	new_cost = 0
-	direction = 1
-	iter_count = 0
-	while True:
-		new_cost = sum_sweep(
-			MPOs, out, envs, direction, tol, oc, norms, max_bond=max_bond
-		)
-		if abs(2 * (new_cost - cost) / (new_cost + cost)) < crit:
-			break
-		cost = new_cost
-		iter_count += 1
-		if iter_count > 1000:
-			print("Compressing sum failed to converge")
-			break
-	return out
+	...
 
 
 if __name__ == "__main__":
