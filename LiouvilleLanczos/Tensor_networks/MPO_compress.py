@@ -607,23 +607,39 @@ def MPOcs_assert_coherent_index_label(MPOs:List[qtn.MatrixProductOperator]):
 class Density_matrix_weighted_compression(Updater):
 	def __init__(self, MPOs:list[qtn.MatrixProductOperator], density_matrix:qtn.TensorNetwork,tol:float,output_MPO:Optional[qtn.MatrixProductOperator] = None) -> None:
 		super().__init__()
+		L = MPOs[0].L
 		if output_MPO is None:
 			self.output_MPO = MPOs[0].copy()
 		else:
 			self.output_MPO = output_MPO
+			assert output_MPO.L == L, "supplied output MPO has unexpected length {output_MPO.L}, instead of {L}"
 		self.input_MPOs = MPOs
+		upind = MPOs[0].upper_ind_id
+		lowind = MPOs[0].lower_ind_id
+		#checks
+		for i,mpo in enumerate(MPOs):
+			assert mpo.upper_ind_id == upind, f"{i}th MPO has incompatible upper index"
+			assert mpo.lower_ind_id == lowind, f"{i}th MPO has incompatible lower index"
+			assert mpo.L == L, f"{i}th MPO as a different size {mpo.L} rather than expected {L}"
+		assert len((self.output_MPO&density_matrix).outer_inds())==0, "supplied density matrix incompatible with output MPO"
+		assert len((self.input_MPOs[0]&density_matrix).outer_inds())==0, "supplied density matrix incompatible with input MPO"
+		self.dm_upper_ind_id = lowind
+		self.dm_lower_ind_id = upind
 		self.density_matrix = density_matrix
 		self.output_env = self.initialize_output_env()
 		self.input_envs = self.initialize_input_envs()
+		self._easy_index = 0
+		self._size = L-1 #two sites update, we report 1 tensor smaller to sweeper.
 	def update(self, site: int):
 		return super().update(site)
 	def size(self):
 		return super().size()
 	def easy_index(self):
-		return super().easy_index()
+		return self._easy_index
 	def result(self):
 		return super().result()
-	
+	def modify_index(index):
+		return index+'mod'
 	def initialize_output_env(self):
 		"""
 		
@@ -635,9 +651,48 @@ class Density_matrix_weighted_compression(Updater):
 		Un ajustement initiale devrait faire la job.
 		"""
 		...
-	def compute_left_env(self,further_left_env,mpo_tensorA,mpo_tensorB,density_tensor):
-		...
-	def compute_right_env(self,further_right_env,mpo_tensorA,mpo_tensorB,density_tensor):
+	def compute_output_left_env(self,site):
+		"""
+		compute the environment tensor composed of the output tensor and density tensor at a site, and the environment tensor further left. 
+		Perform the following contractions:
+		      case 0                                        case 1
+		 ┌───────────────┐                        ┌───────────────┐         
+		 │   ┌────┐   ┌──┴───┐                    │   ┌────┐   ┌──┴───┐     
+		 │   │    ├─a─┤  O*  ├── e                │   │    ├─c─┤  O   ├───g 
+		 │   │    │   │   i  │                    │   │    │   │   i  │     
+		 │   │    │   └──┬───┘                    │   │    │   └──┬───┘     
+		 │   │    │      h                        │   │    │      d         
+		 │   │  i │    ┌─┴─┐                      │   │  i │    ┌─┴─┐       
+		 d   │ L  ├─b──┤ p ├──── f                k   │ L  ├─b──┤ p ├─────f 
+		 │   │  o0│    └─┬─┘            and       │   │  o1│    └─┬─┘       
+		 │   │    │      k                        │   │    │      l         
+		 │   │    │   ┌──┴───┐                    │   │    │   ┌──┴───┐     
+		 │   │    ├─c─┤  O   ├── g                │   │    ├─a─┤  O*  ├───e 
+		 │   │    │   │   i  │                    │   │    │   │   i  │     
+		 │   └────┘   └──┬───┘                    │   └────┘   └──┬───┘     
+		 └───────────────┘                        └───────────────┘         
+		"""
+		if site == 0:
+			#on the left edge there's nothing further left.
+			# effect free placeholder tensor.
+			further_left_env = qtn.Tensor(data = 1)
+			further_left_env = (further_left_env,further_left_env)
+		else:
+			further_left_env = self.output_env[site-1]
+		local_dm = self.density_matrix[site]
+		local_O = self.output_MPO[site]
+		local_Os = local_O.conj()
+		#We must never change the indices of O, and only those of O*, otherwise the actual update process would be more complicated. 
+		#O* indices must be modified in a way that is consistent for all environments: I don't want to do index fiddling in the update process itself.
+		# The simple solution is to set all of O* indices, in a simple site dependent only way
+		# additionnal modification are needed dependent on which constraction we intend to do.
+		# I need to think about the update before going further.
+		c = set(local_O.inds).intersection(further_left_env[0])
+		a = f"Osbond{site}"
+
+
+
+	def compute_output_right_env(self,site):
 		...
 
 def MPO_compressing_sum(

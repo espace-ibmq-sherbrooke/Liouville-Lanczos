@@ -3,10 +3,10 @@ import quimb.tensor as qtn
 
 import pytest
 
-import LiouvilleLanczos.Tensor_networks.MPO_compress as mpc
-from LiouvilleLanczos.Tensor_networks.MPO_compress import Updater,Sweeper,single_sweep
+from LiouvilleLanczos.Tensor_networks.MPO_compress import Density_matrix_weighted_compression
+from LiouvilleLanczos.Tensor_networks.sweeper import Updater,Sweeper,single_sweep
 import numpy as np
-
+#%%
 class mock_Updater(Updater):
 	def __init__(self):
 		self.L = 5
@@ -41,5 +41,15 @@ def test_sweeper():
 	assert np.all(sl<updater.size()), "went out of bounds"
 	assert np.all(np.abs(np.diff(updater.site_log))==1), "single site steps only"
 # %%
-test_sweeper()
+def test_DMWU():
+	input_MPOs = [qtn.MPO_rand_herm(5,2,4) for i in range(2)]
+	state = qtn.MPS_rand_state(5,5,4)
+	print(state.site_ind_id)
+	print(input_MPOs[0].upper_ind_id,' ',input_MPOs[0].lower_ind_id)
+	statec = state.conj()
+	statec.site_ind_id = input_MPOs[0].lower_ind_id
+	rho = state &statec
+	print(rho[0])
+# %%
+test_DMWU()
 # %%
