@@ -21,7 +21,7 @@ from typing import Any, Optional
 
 class Inner_product(ABC):
     @abstractmethod
-    def __call__(self,A,B,Name:Optional[str]):
+    def __call__(self,A,B,real_result:bool,Name:Optional[str]):
         ...
 
 class Liouvillian(ABC):

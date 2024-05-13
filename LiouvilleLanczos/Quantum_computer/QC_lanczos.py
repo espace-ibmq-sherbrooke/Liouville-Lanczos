@@ -66,7 +66,7 @@ class inner_product_spo(Base_inner_product):
         self.estimator = estimator
         self.eps = epsilon
         
-    def __call__(self,A:SparsePauliOp,B:SparsePauliOp,Name:Optional[str]):
+    def __call__(self,A:SparsePauliOp,B:SparsePauliOp,real_result:bool=False,Name:Optional[str]=None):
         Bc = B.adjoint()
         f = A@Bc+Bc@A
         f = relative_simplify_spo(f,self.eps)
@@ -81,10 +81,12 @@ class inner_product_spo(Base_inner_product):
         except:
             ...
         isa_obs_real = obs_real.apply_layout(self.state.layout)
-        #isa_obs_imag = obs_imag.apply_layout(self.state.layout)
-        out_real = np.real(self.estimator.run([(self.state,isa_obs_real)]).result()[0].data.evs)
-        #out_imag = np.real(self.estimator.run([(self.state,isa_obs_imag)]).result()[0].data.evs)
-        #out = out_real + out_imag * 1j
+        out = np.real(self.estimator.run([(self.state,isa_obs_real)]).result()[0].data.evs)
+        if not real_result:
+            isa_obs_imag = obs_imag.apply_layout(self.state.layout)
+            out_imag = np.real(self.estimator.run([(self.state,isa_obs_imag)]).result()[0].data.evs)
+            out += out_imag * 1j
+
         try: #remove the name from the list of tags of the upcoming jobs
             if Name is not None:
                 tags = self.estimator.options.environment.job_tags
@@ -92,7 +94,7 @@ class inner_product_spo(Base_inner_product):
                 self.estimator.options.update(job_tags = tags)
         except:
             ...
-        return out_real
+        return out
 
 class Liouvillian_spo(BaseLiouvillian):
 
@@ -120,13 +122,12 @@ class inner_product_slo(Base_inner_product):
         self.eps = epsilon
         self.mapper = mapper
     
-    def __call__(self,A:op.SparseLabelOp,B:op.SparseLabelOp,Name:Optional[str]):
+    def __call__(self,A:op.SparseLabelOp,B:op.SparseLabelOp,real_result:bool,Name:Optional[str]):
         f = commutators.anti_commutator(A,B.adjoint())
         f = relative_simplify_slo(f,self.eps)
         obs = self.mapper.map(f)
         #separate between real and imaginary observables
         obs_real, obs_imag = separate_imag(obs)
-        #imaginary contribution are necessarily error.
         try: #Add name to the list of tag for this job.
             if Name is not None:
                 tags = self.estimator.options.environment.job_tags
@@ -136,10 +137,11 @@ class inner_product_slo(Base_inner_product):
             ...
         #assume incoming circuit is transpiled
         isa_obs_real = obs_real.apply_layout(self.state.layout)
-        isa_obs_imag = obs_imag.apply_layout(self.state.layout)
-        out_real = np.real(self.estimator.run([(self.state,isa_obs_real)]).result()[0].data.evs)
-        out_imag = np.real(self.estimator.run([(self.state,isa_obs_imag)]).result()[0].data.evs)
-        out = out_real + out_imag * 1j
+        out = np.real(self.estimator.run([(self.state,isa_obs_real)]).result()[0].data.evs)
+        if not real_result:
+            isa_obs_imag = obs_imag.apply_layout(self.state.layout)
+            out_imag = np.real(self.estimator.run([(self.state,isa_obs_imag)]).result()[0].data.evs)
+        out +=  out_imag * 1j
         
         try: #remove the name from the list of tags of the upcoming jobs
             if Name is not None:

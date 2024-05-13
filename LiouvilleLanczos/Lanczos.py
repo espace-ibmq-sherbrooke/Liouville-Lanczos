@@ -39,23 +39,23 @@ class Lanczos():
         i=0
         b = [np.sqrt(self.inner_prod(f_0,f_0,Name="b0"))]
         f_i = f_0/b[-1]
-        multimoments = [[self.inner_prod(o,f_i,Name=f"m{m}_{0}") for m,o in enumerate(other_ops)] ]
+        multimoments = [[self.inner_prod(o,f_i,real_result=False,Name=f"m{m}_{0}") for m,o in enumerate(other_ops)] ]
         f_ip = self.Liouvillian(-H,f_i)
-        a_i = self.inner_prod(f_ip,f_i,Name="a0")
+        a_i = self.inner_prod(f_ip,f_i,real_result=True,Name="a0")
         if self.logger:
             self.logger(i,f_i,a_i,b[-1])
         f_ip = self.sum(f_ip, - a_i*f_i)
-        b_ip = np.sqrt(self.inner_prod(f_ip,f_ip,Name="b1"))
+        b_ip = np.sqrt(self.inner_prod(f_ip,f_ip,real_result=True,Name="b1"))
         f_ip = f_ip / b_ip
         a = [a_i]
         f_i,f_im = f_ip,f_i
         for i in range(1,max_k):
             if b_ip < min_b:
                 return a,b,multimoments
-            multimoments.append([self.inner_prod(o,f_i,Name=f"m{m}_{i}") for m,o in enumerate(other_ops)])
+            multimoments.append([self.inner_prod(o,f_i,real_result=False,Name=f"m{m}_{i}") for m,o in enumerate(other_ops)]) #**not** always real
             f_ip = self.Liouvillian(-H,f_i)
             try:
-                a_i = self.inner_prod(f_ip,f_i,Name=f"a_{i}")
+                a_i = self.inner_prod(f_ip,f_i,real_result=True,Name=f"a_{i}") #always real
                 a.append(a_i)
             except Exception as e:
                 print(f"anomalous termination a at iteration {i}")
@@ -66,7 +66,7 @@ class Lanczos():
                 self.logger(i,f_i,a[-1],b[-1])
             f_ip = self.sum(f_ip,- a_i*f_i,- b[-1]*f_im)
             try:
-                b2 = self.inner_prod(f_ip,f_ip,Name=f"b^2_{i+1}")
+                b2 = self.inner_prod(f_ip,f_ip,real_result=True,Name=f"b^2_{i+1}") #Always real
                 assert b2>self.epsilon , f"b^2={b2} is smaller than {self.epsilon}, terminating"
                 b_ip = np.sqrt(b2)
             except Exception as e:
