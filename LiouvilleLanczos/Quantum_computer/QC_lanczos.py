@@ -26,10 +26,12 @@ The lanczos algorithm implementation meant to use these components is located in
 from qiskit_nature.second_q import operators as op
 from qiskit_nature.second_q.operators import commutators
 from qiskit import QuantumCircuit
-from qiskit.primitives import BaseEstimator
+from qiskit.primitives import BaseEstimatorV2
 from qiskit_nature.second_q.mappers import QubitMapper
 import numpy as np
 from typing import Optional
+
+from qiskit.transpiler import PassManager
 
 from qiskit.quantum_info import SparsePauliOp
 
@@ -45,8 +47,21 @@ def relative_simplify_slo(ope:op.SparseLabelOp,eps:float):
 def relative_simplify_spo(ope:SparsePauliOp,eps:float):
     return ope.simplify(atol=1e-17,rtol=eps)
 
+def separate_imag(op: SparsePauliOp):
+    coeffs_real = []
+    coeffs_img = []
+    for coeff in op.coeffs:
+        coeffs_real.append(np.real(coeff))
+        coeffs_img.append(np.imag(coeff))
+    pauli_op_real = SparsePauliOp(op.paulis, coeffs_real).chop()
+    pauli_op_imag = SparsePauliOp(op.paulis, coeffs_img).chop()
+    return pauli_op_real, pauli_op_imag
+
+
+
+
 class inner_product_spo(Base_inner_product):
-    def __init__(self,state,estimator,epsilon):
+    def __init__(self, state: QuantumCircuit, estimator: BaseEstimatorV2, epsilon: int):
         self.state = state
         self.estimator = estimator
         self.eps = epsilon
@@ -55,25 +70,29 @@ class inner_product_spo(Base_inner_product):
         Bc = B.adjoint()
         f = A@Bc+Bc@A
         f = relative_simplify_spo(f,self.eps)
+        obs_real, obs_imag = separate_imag(f)
         # print(f"A={A}\nB={B}\nf={f}")
         #imaginary contribution are necessarily error.
         try: #Add name to the list of tag for this job.
             if Name is not None:
-                tags = self.estimator.options.environment['job_tags']
+                tags = self.estimator.options.environment.job_tags
                 tags.append(Name)
-                self.estimator.set_options(job_tags=tags)
+                self.estimator.options.update(job_tags = tags)
         except:
             ...
-        out = self.estimator.run(self.state,(f)).result().values[0]
-        out = np.real(out)
+        isa_obs_real = obs_real.apply_layout(self.state.layout)
+        #isa_obs_imag = obs_imag.apply_layout(self.state.layout)
+        out_real = np.real(self.estimator.run([(self.state,isa_obs_real)]).result()[0].data.evs)
+        #out_imag = np.real(self.estimator.run([(self.state,isa_obs_imag)]).result()[0].data.evs)
+        #out = out_real + out_imag * 1j
         try: #remove the name from the list of tags of the upcoming jobs
             if Name is not None:
-                tags = self.estimator.options.environment['job_tags']
+                tags = self.estimator.options.environment.job_tags
                 tags = tags[:-1] # removes the appended name.
-                self.estimator.set_options(job_tags=tags)
+                self.estimator.options.update(job_tags = tags)
         except:
             ...
-        return out
+        return out_real
 
 class Liouvillian_spo(BaseLiouvillian):
 
@@ -95,7 +114,7 @@ class sum_spo(Base_summation):
 
 class inner_product_slo(Base_inner_product):
     
-    def __init__(self,state:QuantumCircuit,estimator:BaseEstimator,mapper:QubitMapper,epsilon:int = 1e-10):
+    def __init__(self,state:QuantumCircuit,estimator:BaseEstimatorV2, mapper:QubitMapper,epsilon:int = 1e-10):
         self.state = state
         self.estimator = estimator
         self.eps = epsilon
@@ -104,20 +123,29 @@ class inner_product_slo(Base_inner_product):
     def __call__(self,A:op.SparseLabelOp,B:op.SparseLabelOp,Name:Optional[str]):
         f = commutators.anti_commutator(A,B.adjoint())
         f = relative_simplify_slo(f,self.eps)
+        obs = self.mapper.map(f)
+        #separate between real and imaginary observables
+        obs_real, obs_imag = separate_imag(obs)
         #imaginary contribution are necessarily error.
         try: #Add name to the list of tag for this job.
             if Name is not None:
-                tags = self.estimator.options.environment['job_tags']
+                tags = self.estimator.options.environment.job_tags
                 tags.append(Name)
-                self.estimator.set_options(job_tags=tags)
+                self.estimator.options.update(job_tags = tags)
         except:
             ...
-        out = np.real(self.estimator.run(self.state,self.mapper.map(f)).result().values[0])
+        #assume incoming circuit is transpiled
+        isa_obs_real = obs_real.apply_layout(self.state.layout)
+        isa_obs_imag = obs_imag.apply_layout(self.state.layout)
+        out_real = np.real(self.estimator.run([(self.state,isa_obs_real)]).result()[0].data.evs)
+        out_imag = np.real(self.estimator.run([(self.state,isa_obs_imag)]).result()[0].data.evs)
+        out = out_real + out_imag * 1j
+        
         try: #remove the name from the list of tags of the upcoming jobs
             if Name is not None:
-                tags = self.estimator.options.environment['job_tags']
+                tags = self.estimator.options.environment.job_tags
                 tags = tags[:-1] # removes the appended name.
-                self.estimator.set_options(job_tags=tags)
+                self.estimator.options.update(job_tags = tags)
         except:
             ...
         return out
