@@ -1,0 +1,12 @@
+#executed on 2024-05-02 22:24:34.833954 
+#resilience level: 1 
+#Dynamical decoupling: True, sequence: XX 
+#total execution time, with wait :0:00:00.003994
+#GS energy result = -3.892385719019467
+"""
+ EstimatorOptions(_VERSION=2, max_execution_time=Unset, environment=EnvironmentOptions(log_level='WARNING', callback=None, job_tags=[]), simulator=SimulatorOptions(noise_model=Unset, seed_simulator=Unset, coupling_map=Unset, basis_gates=Unset), default_precision=Unset, default_shots=10000, optimization_level=Unset, resilience_level=1, seed_estimator=Unset, dynamical_decoupling=DynamicalDecouplingOptions(enable=True, sequence_type='XX', extra_slack_distribution=Unset, scheduling_method=Unset), resilience=ResilienceOptionsV2(measure_mitigation=Unset, measure_noise_learning=MeasureNoiseLearningOptions(num_randomizations=Unset, shots_per_randomization=Unset), zne_mitigation=Unset, zne=ZneOptions(noise_factors=Unset, extrapolator=Unset), pec_mitigation=Unset, pec=PecOptions(max_overhead=Unset, noise_gain=Unset), layer_noise_learning=LayerNoiseLearningOptions(max_layers_to_learn=Unset, shots_per_randomization=Unset, num_randomizations=Unset, layer_pair_depths=Unset)), execution=ExecutionOptionsV2(init_qubits=Unset, rep_delay=Unset), twirling=TwirlingOptions(enable_gates=Unset, enable_measure=Unset, num_randomizations=Unset, shots_per_randomization=Unset, strategy=Unset), experimental=Unset) 
+"""
+a = [(0.09271128926636638+0j), (-0.31698532540512103-0.003572352402397284j), (0.3933722857171073+0.01524312739576108j), (-0.35909771202053486-0.018803127527701264j), (0.4015336586638849+0.002393488087792875j), (-0.450666440361444-0.02716183433318591j), (0.42077387142958994-0.01639072954264988j), (-0.5582855047097648+0.01126677989657012j), (0.7472543479313848+0.0331584135127503j), (-0.48566813242169493-0.003928619712815829j)]
+b=[(1+0j), (2.2366377695204447+0j), (1.8018416380255118+0j), (2.88665503100614+0j), (1.1549048149380159+0j), (2.3727221045560603+0j), (1.752944543077286+0j), (1.6960178260076464+0j), (1.6340630064406159+0j), (3.4686318608901883+0j)]
+mu=[[0j], [(0.44709966612716595+0j)], [(0.08497958847615386-0.0008864250512884365j)], [(-0.7343580244173532-0.09275837645457413j)], [(-0.23460683270922217-0.005635299595888764j)], [(-0.21634510025977816+0.12386885928949454j)], [(0.1274670441645987+0.02670037370751219j)], [(0.42334050846763116-0.055700157471329705j)], [(0.22732341097921183+0.009076626305405722j)], [(0.03706418355096688+0.04025860751383242j)]]
+operator_sizes=[1, 3, 7, 13, 13, 13, 16, 16, 16, 16, 16]
