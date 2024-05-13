@@ -81,10 +81,10 @@ class inner_product_spo(Base_inner_product):
         except:
             ...
         isa_obs_real = obs_real.apply_layout(self.state.layout)
-        #isa_obs_imag = obs_imag.apply_layout(self.state.layout)
+        isa_obs_imag = obs_imag.apply_layout(self.state.layout)
         out_real = np.real(self.estimator.run([(self.state,isa_obs_real)]).result()[0].data.evs)
-        #out_imag = np.real(self.estimator.run([(self.state,isa_obs_imag)]).result()[0].data.evs)
-        #out = out_real + out_imag * 1j
+        out_imag = np.real(self.estimator.run([(self.state,isa_obs_imag)]).result()[0].data.evs)
+        out = out_real + out_imag * 1j
         try: #remove the name from the list of tags of the upcoming jobs
             if Name is not None:
                 tags = self.estimator.options.environment.job_tags
@@ -92,7 +92,7 @@ class inner_product_spo(Base_inner_product):
                 self.estimator.options.update(job_tags = tags)
         except:
             ...
-        return out_real
+        return out
 
 class Liouvillian_spo(BaseLiouvillian):
 
@@ -126,7 +126,6 @@ class inner_product_slo(Base_inner_product):
         obs = self.mapper.map(f)
         #separate between real and imaginary observables
         obs_real, obs_imag = separate_imag(obs)
-        #imaginary contribution are necessarily error.
         try: #Add name to the list of tag for this job.
             if Name is not None:
                 tags = self.estimator.options.environment.job_tags
