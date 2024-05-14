@@ -36,30 +36,6 @@ C0 = FermionicOp(
 )
 C0_mat = mapper.map(C0).to_matrix()
 C2_mat = mapper.map(C2).to_matrix()
-C0101 = mapper.map(FermionicOp(
-    {
-        "+_0 +_1": 1,
-    },
-    num_spin_orbitals=4,
-)).to_matrix()
-C0110 = mapper.map(FermionicOp(
-    {
-        "+_0 +_3": 1,
-    },
-    num_spin_orbitals=4,
-)).to_matrix()
-C1001 = mapper.map(FermionicOp(
-    {
-        "+_1 +_2": 1,
-    },
-    num_spin_orbitals=4,
-)).to_matrix()
-C1010 = mapper.map(FermionicOp(
-    {
-        "+_2 +_3": 1,
-    },
-    num_spin_orbitals=4,
-)).to_matrix()
 #%% Ground state circuit, obtained by inspection of analytical wavefunction
 bt = 0.7854074074074073
 GS_analytical = QuantumCircuit(4)

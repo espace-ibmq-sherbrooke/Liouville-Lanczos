@@ -122,7 +122,7 @@ class inner_product_slo(Base_inner_product):
         self.eps = epsilon
         self.mapper = mapper
     
-    def __call__(self,A:op.SparseLabelOp,B:op.SparseLabelOp,real_result:bool,Name:Optional[str]):
+    def __call__(self,A:op.SparseLabelOp,B:op.SparseLabelOp, Name:Optional[str], real_result:bool = True):
         f = commutators.anti_commutator(A,B.adjoint())
         f = relative_simplify_slo(f,self.eps)
         obs = self.mapper.map(f)
@@ -141,7 +141,7 @@ class inner_product_slo(Base_inner_product):
         if not real_result:
             isa_obs_imag = obs_imag.apply_layout(self.state.layout)
             out_imag = np.real(self.estimator.run([(self.state,isa_obs_imag)]).result()[0].data.evs)
-        out +=  out_imag * 1j
+            out = out + out_imag * 1j
         
         try: #remove the name from the list of tags of the upcoming jobs
             if Name is not None:
