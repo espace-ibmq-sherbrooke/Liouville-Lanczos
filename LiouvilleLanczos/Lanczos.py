@@ -37,7 +37,7 @@ class Lanczos():
 
     def polynomial_hybrid(self,H,f_0,other_ops,max_k,min_b=1e-10):
         i=0
-        b = [np.sqrt(self.inner_prod(f_0,f_0,Name="b0"))]
+        b = [np.sqrt(self.inner_prod(f_0,f_0,real_result=True,Name="b0"))]
         f_i = f_0/b[-1]
         multimoments = [[self.inner_prod(o,f_i,real_result=False,Name=f"m{m}_{0}") for m,o in enumerate(other_ops)] ]
         f_ip = self.Liouvillian(-H,f_i)
