@@ -94,7 +94,7 @@ class inner_product_spo(Base_inner_product):
                 self.estimator.options.update(job_tags = tags)
         except:
             ...
-        return out
+        return out[0]
 
 class Liouvillian_spo(BaseLiouvillian):
 
@@ -150,7 +150,7 @@ class inner_product_slo(Base_inner_product):
                 self.estimator.options.update(job_tags = tags)
         except:
             ...
-        return out
+        return out[0]
 
 class Liouvillian_slo(BaseLiouvillian):
 
