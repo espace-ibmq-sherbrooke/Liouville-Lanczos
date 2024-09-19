@@ -16,9 +16,9 @@ from LiouvilleLanczos.Green import CF_Green
 
 import numpy as np
 
-from qiskit_nature.second_q.mappers import JordanWignerMapper, QubitConverter
+from qiskit_nature.second_q.mappers import JordanWignerMapper
 from qiskit_nature.second_q.operators import FermionicOp
-
+#%%
 qubit_converter = QubitConverter(JordanWignerMapper())
 doubble_occup = FermionicOp(
     {
@@ -154,4 +154,14 @@ w = np.linspace(-5.5,5.5,1000)-1e-1j
 plt.plot(w,np.imag(green_ed(w)))
 plt.plot(w,np.imag(green(w)))
 # plt.savefig("hubu4mu4.pdf")
+# %%
+from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
+from qiskit_ibm_runtime import QiskitRuntimeService
+service_algolab = QiskitRuntimeService(name='ibm-quebec')
+Queb =  service_algolab.backend("ibm_quebec")
+QcPassManager = generate_preset_pass_manager(3,Queb)
+
+qcSS1 = QcPassManager.run(SS1)
+#%%
+qcSS1.depth(lambda x: x[0].name=='ecr')
 # %%
