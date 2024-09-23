@@ -82,7 +82,7 @@ class Lanczos():
 
     def polynomial_hybrid(self,H,f_0,other_vectors,max_k,min_b=1e-10):
         """
-        Perform Lanczos recursion and in the Krylov subspace spanned by the repeated 
+        Perform Lanczos recursion in the Krylov subspace spanned by the repeated 
         action of H on the initial vector f_0, and use it to compute polynomial 
         decomposition of the response functions with the list of other_vectors.
         Perform up to max_k iteration.

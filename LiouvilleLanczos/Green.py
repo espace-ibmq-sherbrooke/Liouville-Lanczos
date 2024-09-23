@@ -35,7 +35,10 @@ class Callable_Green_function_base(ABC):
 
 class integrable_Green_function_base(Callable_Green_function_base):
     """
-    Trait for Green's functions that implement an efficient "integrate" method
+    Trait for Green's functions that implement an efficient "integrate" method.
+    The integrate method compute the closed path integral of the Green function
+    multiplied with some analytical on the real line function on th upper complex
+    line.
     """
     @abstractmethod
     def integrate(self,frequency_weights_function:Callable):
@@ -528,7 +531,7 @@ class Green_matrix(integrable_Green_function_base):
     # @multimethod
     def integrate_scalarfreq(self,scalar_frequency_weights_function:Callable,matrix_frequency_constant:NDArray):
         """
-        integrate G(w)*f(w) where G in the matrix Green function and f(w) is an 
+        Compute the closed path integral of G(w)*f(w) on the upper complex plane, where G in the matrix Green function and f(w) is an 
         analytical scalar function.
         """
         self.__Check_integrable()
@@ -540,7 +543,7 @@ class Green_matrix(integrable_Green_function_base):
     # @multimethod
     def integrate(self,frequency_weights_function:Callable):
         """
-        integrate G(w).F(w) where G is the Green function and F(w) is a matrix valued
+        Compute the closed path integral of G(w).F(w) on the upper complex plane, where G is the Green function and F(w) is a matrix valued
         analytical function.
         """
         self.__Check_integrable()

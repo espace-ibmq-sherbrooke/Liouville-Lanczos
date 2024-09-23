@@ -23,15 +23,15 @@ from qiskit import QuantumCircuit
 
 # import pauliarray.
 
-Op = pa.PauliOperator
+op = pa.PauliOperator
 
 
 class inner_product():
     
-    def __init__(self,state:QuantumCircuit,estimator:BaseEstimator,mapper:QubitConverter,epsilon:int = 1e-10):
+    def __init__(self,state:QuantumCircuit,estimator,mapper,epsilon:int = 1e-10):
         ...
     
-    def __call__(self,A:op.SparseLabelOp,B:op.SparseLabelOp):
+    def __call__(self,A,B):
         ...
 
 class Liouvillian():

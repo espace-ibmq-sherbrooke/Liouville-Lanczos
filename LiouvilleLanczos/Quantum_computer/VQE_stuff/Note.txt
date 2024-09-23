@@ -1,0 +1,3 @@
+All of this directory doesn't really belong within Liouville-Lanczos.
+
+It should be moved to a more relevent project, or have a project of its own.

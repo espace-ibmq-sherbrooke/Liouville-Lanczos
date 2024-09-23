@@ -1,3 +1,7 @@
+# This should be moved out of Liouville-Lanczos. It has more to do with VQE, for 
+# which  we do not have a dedicated library as of today.
+# should leav with adapt_pool.py
+
 """
     Liouville-Lanczos: A library for Many-Body Green's function on quantum and classical computer.
     Copyright (C) 2024  Alexandre Foley
