@@ -1,11 +1,12 @@
 #%%
-from LiouvilleLanczos.Quantum_computer.QC_lanczos import Liouvillian_slo,inner_product_slo,sum_slo
+from LiouvilleLanczos.Quantum_computer.QC_lanczos import Liouvillian_spo,smart_inner_product_spo,sum_spo
 from LiouvilleLanczos.Quantum_computer.Hamiltonian import Line_Hubbard,BoundaryCondition
 from LiouvilleLanczos.Lanczos import Lanczos
 from LiouvilleLanczos.matrix_impl import MatrixState_inner_product,Matrix_Liouvillian,Matrix_sum
 from LiouvilleLanczos.Quantum_computer.Mapping import find_best_layout
 from LiouvilleLanczos.Green import CF_Green,Green_matrix,Lehmann_Green,PolyCF_Green,PolyLehmann_Green
 from qiskit.primitives import StatevectorEstimator as pEstimator
+from qiskit.primitives import StatevectorSampler
 
 from qiskit_nature.second_q.mappers import JordanWignerMapper
 from qiskit_nature.second_q.operators import FermionicOp
@@ -34,8 +35,11 @@ C0 = FermionicOp(
     },
     num_spin_orbitals=4,
 )
-C0_mat = mapper.map(C0).to_matrix()
-C2_mat = mapper.map(C2).to_matrix()
+C0_spo = mapper.map(C0)
+C2_spo = mapper.map(C2)
+C0_mat = C0_spo.to_matrix()
+C2_mat = C2_spo.to_matrix()
+Ham_spo = mapper.map(Ham)
 #%% Ground state circuit, obtained by inspection of analytical wavefunction
 bt = 0.7854074074074073
 GS_analytical = QuantumCircuit(4)
@@ -51,10 +55,9 @@ GS_analytical.cz(1,2)
 GS_analytical.swap(1,2)
 
 #%% Sanity check: compare matrix ground energy with simulated estimator ground energy.
-Hmat = mapper.map(Ham).to_matrix()
+Hmat = Ham_spo.to_matrix()
 estimator = pEstimator()
-qubit_converter = (JordanWignerMapper())
-HHam = qubit_converter.map(Ham)
+HHam = Ham_spo
 E,S = np.linalg.eigh(Hmat)
 GS_mat = S[:,0]
 print(E[0])
@@ -65,11 +68,12 @@ a_ed,b_ed,mu_ed = matrix_lanczos.polynomial_hybrid(Hmat,C0_mat,[C2_mat],10)
 green_ed = CF_Green(a_ed,b_ed)
 # %% Quantum computer simulation
 eps = 1e-6
-SQ_inpro = inner_product_slo(GS_analytical,estimator,qubit_converter,eps)
-SQ_Liou = Liouvillian_slo(eps)
-lanczos = Lanczos(SQ_inpro,SQ_Liou,sum_slo(eps))
-a_sim5,b_sim5,mu_sim5 = lanczos.polynomial_hybrid(Ham,C0,[C2],10,5e-3)
-# green_sim = CF_Green(a_sim5,b_sim5)
+sampler = StatevectorSampler()
+SQ_inpro = smart_inner_product_spo(GS_analytical,sampler,eps)
+SQ_Liou = Liouvillian_spo(eps)
+lanczos = Lanczos(SQ_inpro,SQ_Liou,sum_spo(eps))
+a_sim5,b_sim5,mu_sim5 = lanczos.polynomial_hybrid(HHam,C0_spo,[C2_spo],10,5e-3)
+#green_sim = CF_Green(a_sim5,b_sim5)
 #%% We observe that the result are coherent.
 # import matplotlib.pyplot as plt
 # w = np.linspace(-5.5,5.5,1000)-1e-1j

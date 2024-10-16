@@ -18,20 +18,30 @@
 
 
 """
-Componants for the Liouvillian recursion method on a Quantum computer using Qiskit.
+Components for the Liouvillian recursion method on a Quantum computer using Qiskit.
 The lanczos algorithm implementation meant to use these components is located in Lanczos.py
 """
 
-
+#%%
 from qiskit_nature.second_q import operators as op
 from qiskit_nature.second_q.operators import commutators
 from qiskit import QuantumCircuit
-from qiskit.primitives import BaseEstimatorV2
+from qiskit.primitives import BaseEstimatorV2, BaseSamplerV2
 from qiskit_nature.second_q.mappers import QubitMapper
 import numpy as np
 from typing import Optional
 
 from qiskit.transpiler import PassManager
+
+from pauliarray import WeightedPauliArray, PauliArray
+from pauliarray.partition.commutating_paulis.exclusive_fct import (  # partition_same_z,
+    partition_general_commutating,
+    partition_same_x,
+    partition_same_x_plus_special,
+)
+from pauliarray.diagonalisation.commutating_paulis.with_circuits import (
+    general_to_diagonal as general_to_diagonal_with_circuit,
+)
 
 from qiskit.quantum_info import SparsePauliOp
 
@@ -63,8 +73,20 @@ def separate_imag(op: SparsePauliOp):
     pauli_op_imag = SparsePauliOp(op.paulis, coeffs_img).chop()
     return pauli_op_real, pauli_op_imag
 
-
-
+def evaluate_diag_expval(diag_obs: PauliArray, samples: dict[str: float]):
+    #evaluate expval of diagonal pauli string on dictionary of samples
+    expval = 0
+    z_string = diag_obs.z_strings[0]
+    x_string = diag_obs.x_strings[0]
+    assert np.array_equal(x_string, [False]*diag_obs.num_qubits), 'Observable is not diagonal'
+    for basis_state in samples:
+        sign = 1
+        for i in range(len(basis_state)):
+            if z_string[-1-i] and basis_state[i] == '1':
+                sign *= -1
+        expval += sign * samples[basis_state]
+    return expval
+        
 
 class inner_product_spo(Base_inner_product):
     """
@@ -179,7 +201,7 @@ class inner_product_slo(Base_inner_product):
         self.eps = epsilon
         self.mapper = mapper
     
-    def __call__(self,A:op.SparseLabelOp,B:op.SparseLabelOp,real_result:bool,Name:Optional[str]):
+    def __call__(self,A:op.SparseLabelOp,B:op.SparseLabelOp, Name:Optional[str], real_result:bool = True):
         f = commutators.anti_commutator(A,B.adjoint())
         f = relative_simplify_slo(f,self.eps)
         obs = self.mapper.map(f)
@@ -198,7 +220,7 @@ class inner_product_slo(Base_inner_product):
         if not real_result:
             isa_obs_imag = obs_imag.apply_layout(self.state.layout)
             out_imag = np.real(self.estimator.run([(self.state,isa_obs_imag)]).result()[0].data.evs)
-        out +=  out_imag * 1j
+            out = out + out_imag * 1j
         
         try: #remove the name from the list of tags of the upcoming jobs
             if Name is not None:
