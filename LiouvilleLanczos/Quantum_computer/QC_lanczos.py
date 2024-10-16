@@ -77,10 +77,10 @@ class inner_product_spo(Base_inner_product):
     def __init__(self, state: QuantumCircuit, estimator: BaseEstimatorV2, epsilon: int):
         """
         Constructor for the inner product.
-        requires:
-        state: a quantum circuit that produce a desired state.
-        estimator: an EstimatorV2 estimator to submit jobs to a quantum computer.
-        epsilon: target accuracy, smaller relative values are truncated. 
+        requires
+        - state: a quantum circuit that produce a desired state.
+        - estimator: an EstimatorV2 estimator to submit jobs to a quantum computer.
+        - epsilon: target accuracy, smaller relative values are truncated. 
         """
         self.state = state
         self.estimator = estimator
