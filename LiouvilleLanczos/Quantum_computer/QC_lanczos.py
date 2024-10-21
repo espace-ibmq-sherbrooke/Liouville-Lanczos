@@ -25,9 +25,12 @@ The lanczos algorithm implementation meant to use these components is located in
 #%%
 from qiskit_nature.second_q import operators as op
 from qiskit_nature.second_q.operators import commutators
-from qiskit import QuantumCircuit
+from qiskit import QuantumCircuit, QuantumRegister
 from qiskit.primitives import BaseEstimatorV2, BaseSamplerV2
 from qiskit_nature.second_q.mappers import QubitMapper
+
+from qiskit.circuit.library import TwoLocal, RYGate, RZGate, CXGate
+from qiskit.circuit import Instruction, Qubit
 import numpy as np
 from typing import Optional
 
@@ -244,3 +247,50 @@ class sum_slo(Base_summation):
         else:
             A = X[0]+X[1]
         return relative_simplify_slo(A,self.eps)
+        
+class ControllableHEA(TwoLocal):
+    
+    def __init__(self, 
+        num_qubits: int,
+        ent_map,
+        reps: int,
+        skip_final_rotation_layer: bool = False,
+        su2_gates: Instruction = None):
+
+        if su2_gates is None:
+            su2_gates = [RYGate, RZGate]
+
+        super().__init__(
+            num_qubits=num_qubits,
+            rotation_blocks=su2_gates,
+            entanglement_blocks=CXGate,
+            entanglement= [ent_map, ent_map[::-1]],
+            reps= 2 * reps,
+            skip_unentangled_qubits=False,
+            skip_final_rotation_layer=skip_final_rotation_layer,
+            parameter_prefix="θ",
+            insert_barriers=True,
+            initial_state=None,
+            name= 'c-HEA',
+            flatten=None,
+        )
+    
+    def add_control(self):
+        #new controlled circuit
+        q_r = QuantumRegister(self.num_qubits + 1, 'q')
+        controlled_HEA = QuantumCircuit(q_r)
+        #qubit -1 is the control qubit for all single qubit operations
+        control_qubit = Qubit(q_r, self.num_qubits)
+
+        for instruction in self.decompose().data:
+            gate = instruction.operation
+            qubit_indices = [instruction.qubits[i]._index for i in range(gate.num_qubits)]
+            qubits = [Qubit(q_r, index) for index in qubit_indices]
+            if gate.num_qubits == 1:
+                gate = gate.control()
+                qubits = (control_qubit, qubits[0])
+            controlled_HEA.append(gate, qubits)
+        return controlled_HEA
+
+
+
