@@ -183,9 +183,9 @@ N = len(w)
 #Or its a bug that was present in Liouville-Lanczos when I performed the quantum computation.
 #(e.g. bad sign on the Liouvillian. this would affect the alpha coefficient in the same way, but their value is pure noise for that problem.)
 # Because real quantum hardware is (on the surface) involved, it's a bit expensive to test.
-QC_Green01_queb1 = PolyCF_Green([],[],[-m[0] for k,m in enumerate(mu_queb10k)],QC_Green00_queb10k)
+QC_Green01_queb1 = PolyCF_Green([-m[0] for k,m in enumerate(mu_queb10k)],QC_Green00_queb10k)
 Green_q = Green_matrix([QC_Green00_queb10k.to_Lehmann(),QC_Green01_queb1.to_Lehmann()],2,[(0,0,0,1),(1,1,0,1),(0,1,1,1),(1,0,1,1)])
-QC_Green01_sherx = PolyCF_Green([],[],[-m[0] for m in mu_sher10k],QC_Green00_sher10k)
+QC_Green01_sherx = PolyCF_Green([-m[0] for m in mu_sher10k],QC_Green00_sher10k)
 Green_s = Green_matrix([QC_Green00_sher10k.to_Lehmann(),QC_Green01_sherx.to_Lehmann()],2,[(0,0,0,1),(1,1,0,1),(0,1,1,1),(1,0,1,1)])
 #%% Compute GS energy with Galitsky-Migdal's formula
 def fermi_dirac_T0(w):
@@ -222,14 +222,14 @@ a_sher100k = [-0.03251154758899268, 0.0710224328647117, -0.06457048201008102, 0.
 b_sher100k=[1.0, 2.236290696407671, 1.7888580866001078, 3.0700707879805216, 0.501457355697284, 3.837236663081367, 4.023550604945933]
 mu_sher100k=[[0.0], [0.4471690561546307], [-0.010564759845977304], [-0.9220340482812656], [0.05529268146509505], [-0.16294435107894356], [-0.012141263144521058]]
 QC_Green00_sher100k = CF_Green(a_sher100k,b_sher100k)
-QC_Green01_sher100k= PolyCF_Green([],[],[-m[0] for m in mu_sher100k],QC_Green00_sher100k)
+QC_Green01_sher100k= PolyCF_Green([-m[0] for m in mu_sher100k],QC_Green00_sher100k)
 Green_s100k = Green_matrix([QC_Green00_sher100k.to_Lehmann(),QC_Green01_sher100k.to_Lehmann()],2,[(0,0,0,1),(1,1,0,1),(0,1,1,1),(1,0,1,1)])
 # from QC_hubbard2site_data_ibm_quebec_2023-10-02 14:25:53.314127
 a_queb100k = [0.01680300626304802, -0.014641915450875433, -0.028083376055043213, 0.052400740075163585, -0.17630320760789917, -0.06151792472675477, 0.13619615697076926, -0.2691556513498396, -0.007937486028779861, 0.1219565551340035]
 b_queb100k=[1.0, 2.2360240652779497, 1.7888700609790429, 2.9883010436974797, 0.6831521365423429, 2.4153042772614723, 2.1908392878130787, 1.7037660561845271, 2.207563321606449, 2.3707140205694954]
 mu_queb100k=[[0.0], [0.4472223781168002], [-0.004934793745336071], [-0.7233784667312323], [0.07202162481750417], [-0.43446495057811507], [-0.08184152518753443], [0.432423517277843], [-0.018322227876538408], [-0.12703786829727318]]
 QC_Green00_queb100k = CF_Green(a_queb100k,b_queb100k)
-QC_Green01_queb100k= PolyCF_Green([],[],[-m[0] for m in mu_queb100k],QC_Green00_queb100k)
+QC_Green01_queb100k= PolyCF_Green([-m[0] for m in mu_queb100k],QC_Green00_queb100k)
 Green_q100k = Green_matrix([QC_Green00_queb100k.to_Lehmann(),QC_Green01_queb100k.to_Lehmann()],2,[(0,0,0,1),(1,1,0,1),(0,1,1,1),(1,0,1,1)])
 Kq = Green_q100k.integrate_scalarfreq(lambda x: fermi_dirac_T0(x),H_0)#Kin+mu energy for one spin
 muq = Green_q100k.integrate_scalarfreq(lambda x: fermi_dirac_T0(x),MU)#Kin+mu energy for one spin

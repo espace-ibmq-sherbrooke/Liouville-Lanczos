@@ -653,6 +653,7 @@ class Density_matrix_weighted_compression(Updater):
 		...
 	def compute_output_left_env(self,site):
 		"""
+		The X envs will need the same computations; this function will become a generic implementation for input and output envs.
 		compute the environment tensor composed of the output tensor and density tensor at a site, and the environment tensor further left. 
 		Perform the following contractions:
 		      case 0                                        case 1
@@ -671,6 +672,7 @@ class Density_matrix_weighted_compression(Updater):
 		 │   │    │   │   i  │                    │   │    │   │   i  │     
 		 │   └────┘   └──┬───┘                    │   └────┘   └──┬───┘     
 		 └───────────────┘                        └───────────────┘         
+		b and f do not need to be explicitly known.
 		"""
 		if site == 0:
 			#on the left edge there's nothing further left.
@@ -679,16 +681,44 @@ class Density_matrix_weighted_compression(Updater):
 			further_left_env = (further_left_env,further_left_env)
 		else:
 			further_left_env = self.output_env[site-1]
+		if site == self.output_MPO.L-1:
+			further_right_env = qtn.Tensor(data = 1)
+			further_right_env = (further_right_env,further_right_env)
+		else:
+			further_right_env = self.output_env[site+1]
 		local_dm = self.density_matrix[site]
 		local_O = self.output_MPO[site]
 		local_Os = local_O.conj()
 		#We must never change the indices of O, and only those of O*, otherwise the actual update process would be more complicated. 
-		#O* indices must be modified in a way that is consistent for all environments: I don't want to do index fiddling in the update process itself.
+		# O* indices must be modified in a way that is consistent for all environments: I don't want to do
+		#  index fiddling (well as little as possible) in the update process itself.
 		# The simple solution is to set all of O* indices, in a simple site dependent only way
 		# additionnal modification are needed dependent on which constraction we intend to do.
 		# I need to think about the update before going further.
-		c = set(local_O.inds).intersection(further_left_env[0])
-		a = f"Osbond{site}"
+		c = set(local_O.inds).intersection(further_left_env[0])# by design, it mustn't matter wich of 0 or 1 we take to compute the index.
+		a = f"Ostarback{c}"
+		g = set(local_O.inds).intersection(further_right_env[0])# idem
+		e = f"Ostarback{g}"
+		k = self.output_MPO.upper_ind_id.format(site)
+		d = self.output_MPO.lower_ind_id.format(site)
+		# b and f do not need to be explicitly known.
+		# we need to know what are the current id of upper and lower index of the local dm tensor.
+		# by requirement of the constructor, we know that the 
+		#  - upper index of the dm is the lower index of the input and output MPOs
+		#  - lower index of the dm is the upper index of the input and output MPOs
+		dmup = d
+		dmdown = k
+		h = dmup+'h'
+		l = dmdown+'l'
+		#case 0
+		dm0 = local_dm.reindex({dmup:h})
+		ostar0 = local_Os.reindex({c:a,g:e,d:h,k:d})# when the seemingly cyclic renaming are at the end there's no problem. the tensor doesn't become self connecting.
+		case0= (dm0&ostar0&local_O&further_left_env[0]).contract()
+		#case 1
+		dm1 = local_dm.reindex({dmdown:l})
+		ostar1 = local_Os.reindex({c:a,g:e,k:l,d:k})
+		case1 = (dm1&ostar1&local_O&further_left_env[1]).contract()
+		return (case0,case1)
 
 
 

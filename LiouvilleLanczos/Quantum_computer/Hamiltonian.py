@@ -32,6 +32,10 @@ from qiskit_nature.second_q.hamiltonians.lattices import (
 from qiskit_nature.second_q.hamiltonians import FermiHubbardModel
 
 def Line_Hubbard_BaseProblem(t:float,mu:float,U:float,N:int,boundary_condition = BoundaryCondition.OPEN):
+    """
+    produce the Hubbard Hamiltonian on a line, with hopping parameter t, chemical potential mu and interaction U.
+    The line has N sites and boundary_condition.
+    """
     num_nodes = N
     
     line_lattice = LineLattice(num_nodes=num_nodes, boundary_condition=boundary_condition)
@@ -44,5 +48,12 @@ def Line_Hubbard_BaseProblem(t:float,mu:float,U:float,N:int,boundary_condition =
     )
     return fhm
 def Line_Hubbard(t:float,mu:float,U:float,N:int,boundary_condition = BoundaryCondition.OPEN):
+    """
+    produce the Hubbard Hamiltonian on a line, with hopping parameter t, chemical potential mu and interaction U.
+    The line has N sites and boundary_condition.
+
+    The result is a slo, which should be converted to sparse pauli op with a mapper
+    as soon as possible, for performance.
+    """
     return Line_Hubbard_BaseProblem(t,mu,U,N,boundary_condition).second_q_op()
 

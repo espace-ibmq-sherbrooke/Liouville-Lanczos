@@ -1,3 +1,7 @@
+# This should be moved out of Liouville-Lanczos. It has more to do with VQE, for 
+# which  we do not have a dedicated library as of today.
+# should leav with Adapt.py
+
 """
     Liouville-Lanczos: A library for Many-Body Green's function on quantum and classical computer.
     Copyright (C) 2024  Alexandre Foley
@@ -62,6 +66,3 @@ def Connectivity_Gpool(qubit_connectivity):
     It should be more hardware efficient to consider all native 2qubit gates
     """
     raise NotImplementedError()
-
-def fermion_pool(nqubits,max_excitation):
-    
