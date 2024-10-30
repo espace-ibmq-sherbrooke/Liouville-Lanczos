@@ -12,11 +12,11 @@ from qiskit.transpiler import PassManager
 rm_final_measure = PassManager(RemoveFinalMeasurements())
 
 """
-Fiddling to allow sub-circuit optimization. Mappomatic reorder the qubits in a way that 
-doesn't tell us the correspondance with the orginial qubits. Tracks qubit permutation
-with by adding measurements to the end of the supplied circuit. This create a labeling 
-correspondance between the classical and quantum bits, and the classical bits labeling is 
-unchanged by the optimization process.
+Fiddling to allow sub-circuit optimization. Mappomatic reorder the qubits in a way 
+that doesn't tell us the correspondance with the orginial qubits. Tracks qubit permutation
+by adding measurements to the end of the supplied circuit. This create a labeling 
+correspondance between the classical and quantum bits, and the classical bits labeling 
+is unchanged by the optimization process.
 
 Use find_best_layout to obtain a backend optimized layout for your circuit.
 

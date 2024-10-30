@@ -34,42 +34,56 @@ class Matrix_sum(Summation):
         X = np.array(X)
         return np.add.reduce(X,axis=0)
 
-class DensityMatrix_inner_product(Summation):
+class DensityMatrix_inner_product(Inner_product):
+    """
+    This operator inner product is defined as $\\mathrm{Tr}\\left[ \\rho \\{A , B^\dagger\\} \\right]$
+    where $\\rho$ is a density matrix, $A$ and $B$ are operators, and the curly braces
+    denote the anti-commutator.
+    This class implements the computation with classical linear algebra (e.g. numpy).
+    """
     def __init__(self,DensityMatrix):
+        """
+        initialise the inner product with the density matrix.
+        """
         self.DM =DensityMatrix
     def __call__(self, A,B,*args,**kwargs) -> float:
+        """
+        compute the inner product between A and B.
+        """
         Bd = np.conj(B.T)
         P = A@Bd
         T = Bd@A
         rP = self.DM@P
         rT = self.DM@T
-       #debug
-        # O = np.trace(rP)+np.trace(rT)
-       # for some reason, the different possible order 
-       # of evaluation don't behave in the same way. 
-       # They give drastically different results when close to Eigenspace depletion.
-        # I = np.trace(  rP + rT )
-        II = np.trace(  self.DM@(P + T) ) #most reliably precise so far.
-        # III = np.einsum('ij,ji',self.DM,P+T) #in principle slightly faster than 2, untested
-        # IIII = np.einsum('ij,jk,ki',self.DM,A,Bd) + np.einsum('ij,jk,ki',self.DM,Bd,A)
+        II = np.trace(  self.DM@(P + T) ) #most reliably precise so far. not that great.
         out = II
-        # print(f"DMIP instability 3:{III}, 2:{II}, 0:{O}")
-        # assert abs(I-out) < 1e-10
-        # assert abs( II-out) < 1e-10
-        # assert abs( III-out) < 1e-10
-        # assert abs( IIII-out) < 1e-10
-        # assert abs( O-out) < 1e-10
-       #!debug 
         return out
     
 class Hamiltonian_inner_product(Inner_product):
+    """
+    Implement a statevector inner product.
+    """
     def __call__(self,A,B):
         return  np.conj(A.T)@B
     
 class MatrixState_inner_product(Inner_product):
+    """
+    This operator inner product is defined as $\\bra{\\psi} \\rho \\{A , B^\dagger\\} \\ket{\\psi}$
+    where $\\ket{\\psi}$ is a quantum state, $A$ and $B$ are operators, and the 
+    curly braces denote the anti-commutator.
+    This class implements the computation with classical linear algebra (e.g. numpy).
+    It is more efficiant than Density_Matrix_inner_product whenever the density 
+    matrix is a projector.
+    """
     def __init__(self,state):
+        """
+        initialize the inner product with the state.
+        """
         self.state =state
     def __call__(self, A,B,*args,**kwargs) -> float:
+        """
+        compute the inner product between A and B.
+        """
         Bd = np.conj(B.T)
         # f = A@Bd + Bd@A
         sa = A@self.state

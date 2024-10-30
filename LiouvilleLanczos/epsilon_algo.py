@@ -22,6 +22,12 @@ import numpy as np
 from numpy.typing import NDArray
 
 def epsilon(sequence:NDArray):
+    """
+    epsilon algorithm for extrapolation of convergent and some divergent sequence.
+    For many divergent sequence, it will compute correctly the value of the
+    function that generate the divergent sequence.
+    See https://doi.org/10.1016/S0377-0427(00)00355-1 for more information.
+    """
     e = np.array(sequence)
     em = np.zeros(len(e)+1,dtype=e.dtype)
     keep_going = len(e) >=2 and  ~np.any(np.isnan(e))
