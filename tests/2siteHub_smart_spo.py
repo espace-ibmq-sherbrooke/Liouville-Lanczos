@@ -16,7 +16,6 @@ import numpy as np
 from qiskit import transpile
 from datetime import datetime
 from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
-
 #%% problem hamiltonian and other operators setup.
 U = 4
 mapper = JordanWignerMapper()
@@ -73,14 +72,14 @@ SQ_inpro = smart_inner_product_spo(GS_analytical,sampler,eps)
 SQ_Liou = Liouvillian_spo(eps)
 lanczos = Lanczos(SQ_inpro,SQ_Liou,sum_spo(eps))
 a_sim5,b_sim5,mu_sim5 = lanczos.polynomial_hybrid(HHam,C0_spo,[C2_spo],10,5e-3)
-#green_sim = CF_Green(a_sim5,b_sim5)
+green_sim = CF_Green(a_sim5,b_sim5)
 #%% We observe that the result are coherent.
-# import matplotlib.pyplot as plt
-# w = np.linspace(-5.5,5.5,1000)-1e-1j
-# plt.plot(w,np.imag(green_sim(w)))
+import matplotlib.pyplot as plt
+w = np.linspace(-5.5,5.5,1000)-1e-1j
+plt.plot(w,np.imag(green_sim(w)))
 # # plt.savefig("hubu4mu2.pdf")
-# plt.plot(w,np.imag(green_ed(w)))
-# #%%
+plt.plot(w,np.imag(green_ed(w)))
+#%%
 from qiskit_ibm_runtime import (
     Session,
     Sampler,
