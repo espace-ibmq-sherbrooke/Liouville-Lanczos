@@ -145,6 +145,58 @@ class inner_product_spo(Base_inner_product):
         except:
             ...
         return out[0]
+    
+class smart_inner_product_spo(Base_inner_product):
+    def __init__(self, state: QuantumCircuit, sampler: BaseSamplerV2, epsilon: int, exp_dict = {}):
+        self.state = state
+        self.sampler = sampler
+        self.eps = epsilon
+        self.exp_dict = exp_dict
+    
+    def __call__(self,A:SparsePauliOp,B:SparsePauliOp,real_result:bool=False,Name:Optional[str]=None):
+        Bc = B.adjoint()
+        f = A@Bc+Bc@A
+        f = relative_simplify_spo(f,self.eps)
+        #obs_real, obs_imag = separate_imag(f)
+        #check dictionary for previously calculated expectation values
+        f_expval = 0
+        labels_to_eval = []
+        coeffs_to_eval = []
+        for pauli in f:
+            isa_pauli = pauli.apply_layout(self.state.layout)
+            coeff = pauli.coeffs[0]
+            pauli_string = str(isa_pauli.paulis[0])
+            if pauli_string in self.exp_dict:
+                str_expval = self.exp_dict[pauli_string]
+                f_expval += str_expval * coeff
+            else:
+                labels_to_eval.append(pauli_string)
+                coeffs_to_eval.append(coeff)
+
+        try: #Add name to the list of tag for this job.
+            if Name is not None:
+                tags = self.sampler.options.environment.job_tags
+                tags.append(Name)
+                self.sampler.options.update(job_tags = tags)
+        except:
+            ...
+        
+        if len(labels_to_eval) != 0:
+            to_eval = WeightedPauliArray.from_labels_and_weights(labels_to_eval, coeffs_to_eval)
+            #group paulis into commuting cliques
+            cliques = to_eval.partition_with_fct(partition_same_x_plus_special)
+            #produce measurement circuits associated with each clique
+            for clique in cliques:
+                diag_part, factors_part, transformations_part_circuits = general_to_diagonal_with_circuit(clique.paulis)
+                qc = self.state.compose(transformations_part_circuits)
+                qc.measure_all()
+                samples = self.sampler.run(qc).result().quasi_dists[0].binary_probabilities()
+                #reconstruct expvals from samples, add to dictionary
+                for i, obs in enumerate(clique.paulis):
+                    expval = evaluate_diag_expval(diag_part[i], samples)
+                    self.exp_dict[obs.to_labels()[0]] = expval
+                    f_expval += factors_part[i] * expval
+        return f_expval
 
 class Liouvillian_spo(BaseLiouvillian):
     """
