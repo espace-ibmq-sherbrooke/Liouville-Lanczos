@@ -17,9 +17,9 @@
 """
 #%%
 from qiskit.circuit.library import TwoLocal
-from qiskit import QuantumCircuit
+from qiskit import QuantumCircuit, QuantumRegister
 from qiskit.circuit.quantumcircuit import QuantumCircuit
-from qiskit.circuit import Gate, Instruction, ParameterVector
+from qiskit.circuit import Gate, Instruction, ParameterVector, Qubit
 
 import numpy as np
 from qiskit.circuit.library.standard_gates import (
@@ -105,3 +105,57 @@ T = S(4)
 # #%%
 # two_rots_line(T,1).draw()
 # # %%
+class ControllableHEA(TwoLocal):
+    
+    def __init__(self, 
+        num_qubits: int,
+        ent_map,
+        reps: int,
+        skip_final_rotation_layer: bool = False,
+        su2_gates: Instruction = None):
+
+        if su2_gates is None:
+            su2_gates = [RYGate]
+
+        super().__init__(
+            num_qubits=num_qubits,
+            rotation_blocks=su2_gates,
+            entanglement_blocks=CXGate,
+            entanglement= [ent_map, ent_map[::-1]],
+            reps= 2 * reps,
+            skip_unentangled_qubits=False,
+            skip_final_rotation_layer=skip_final_rotation_layer,
+            parameter_prefix="θ",
+            insert_barriers=True,
+            initial_state=None,
+            name= 'c-HEA',
+            flatten=None,
+        )
+    
+    def add_control(self, control_groups: list[tuple[int]]):
+        #control_map is a list of groups of qubits controlled by the same qubit
+        ctrl_map = [None]*self.num_qubits
+        num_controls = len(control_groups)
+        for i in range(num_controls):
+            group = control_groups[i]
+            for qubit in group:
+                assert ctrl_map[qubit] == None, 'Each qubit can only have 1 control'
+                ctrl_map[qubit] = i
+        #new controlled circuit
+        q_r = QuantumRegister(self.num_qubits + num_controls, 'q')
+        controlled_HEA = QuantumCircuit(q_r)
+        #qubit -1 is the control qubit for all single qubit operations
+        control_qubits = [Qubit(q_r, q_r.size - 1 - i) for i in range(num_controls)]
+
+        for instruction in self.decompose().data:
+            print(instruction)
+            gate = instruction.operation
+            qubit_indices = [instruction.qubits[i]._index for i in range(gate.num_qubits)]
+            qubits = [Qubit(q_r, index) for index in qubit_indices]
+            if gate.num_qubits == 1:
+                gate = gate.control()
+                print(qubits[0])
+                print(control_qubits[ctrl_map[qubit_indices[0]]])
+                qubits = (control_qubits[ctrl_map[qubit_indices[0]]], qubits[0])
+            controlled_HEA.append(gate, qubits)
+        return controlled_HEA
