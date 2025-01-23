@@ -76,7 +76,7 @@ def separate_imag(op: SparsePauliOp):
     pauli_op_imag = SparsePauliOp(op.paulis, coeffs_img).chop()
     return pauli_op_real, pauli_op_imag
 
-def evaluate_diag_expval(diag_obs: PauliArray, samples: dict[str: float]):
+def evaluate_diag_expval(diag_obs: PauliArray, samples: dict[str: float], shots: int):
     #evaluate expval of diagonal pauli string on dictionary of samples
     expval = 0
     z_string = diag_obs.z_strings[0]
@@ -87,7 +87,7 @@ def evaluate_diag_expval(diag_obs: PauliArray, samples: dict[str: float]):
         for i in range(len(basis_state)):
             if z_string[-1-i] and basis_state[i] == '1':
                 sign *= -1
-        expval += sign * samples[basis_state]
+        expval += sign * samples[basis_state]/shots
     return expval
         
 
@@ -132,6 +132,7 @@ class inner_product_spo(Base_inner_product):
             ...
         isa_obs_real = obs_real.apply_layout(self.state.layout)
         out = np.real(self.estimator.run([(self.state,isa_obs_real)]).result()[0].data.evs)
+        out = complex(out)
         if not real_result:
             isa_obs_imag = obs_imag.apply_layout(self.state.layout)
             out_imag = np.real(self.estimator.run([(self.state,isa_obs_imag)]).result()[0].data.evs)
@@ -144,7 +145,7 @@ class inner_product_spo(Base_inner_product):
                 self.estimator.options.update(job_tags = tags)
         except:
             ...
-        return out[0]
+        return out
     
 class smart_inner_product_spo(Base_inner_product):
     def __init__(self, state: QuantumCircuit, sampler: BaseSamplerV2, epsilon: int, exp_dict = {}):
@@ -187,15 +188,16 @@ class smart_inner_product_spo(Base_inner_product):
             cliques = to_eval.partition_with_fct(partition_same_x_plus_special)
             #produce measurement circuits associated with each clique
             for clique in cliques:
-                diag_part, factors_part, transformations_part_circuits = general_to_diagonal_with_circuit(clique.paulis)
+                diag_part, factors_part, transformations_part_circuits = general_to_diagonal_with_circuit(clique.paulis, force_single_qubit_generators = True)
+                coeffs = clique.weights
                 qc = self.state.compose(transformations_part_circuits)
                 qc.measure_all()
-                samples = self.sampler.run(qc).result().quasi_dists[0].binary_probabilities()
+                samples = self.sampler.run([qc]).result()[0].data.meas.get_counts()
                 #reconstruct expvals from samples, add to dictionary
                 for i, obs in enumerate(clique.paulis):
-                    expval = evaluate_diag_expval(diag_part[i], samples)
+                    expval = evaluate_diag_expval(diag_part[i], samples, self.sampler.default_shots)
                     self.exp_dict[obs.to_labels()[0]] = expval
-                    f_expval += factors_part[i] * expval
+                    f_expval += factors_part[i] * expval * coeffs[i]
         return f_expval
 
 class Liouvillian_spo(BaseLiouvillian):
@@ -284,7 +286,7 @@ class inner_product_slo(Base_inner_product):
                 self.estimator.options.update(job_tags = tags)
         except:
             ...
-        return out[0]
+        return out
 
 class Liouvillian_slo(BaseLiouvillian):
     """
